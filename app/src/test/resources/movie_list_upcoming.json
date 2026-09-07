@@ -1,0 +1,21 @@
+{
+  "dates": {
+    "maximum": "2026-09-24",
+    "minimum": "2026-08-27"
+  },
+  "page": 1,
+  "results": [
+    {
+      "id": 1234821,
+      "title": "Jurassic World Rebirth",
+      "release_date": "2026-07-01",
+      "vote_average": 0.0,
+      "genre_ids": [878, 12],
+      "overview": "An unreleased film, so TMDB reports no rating yet.",
+      "poster_path": "/q0fGCmjLuNoXoOwBEGQOWm88vHs.jpg",
+      "backdrop_path": null
+    }
+  ],
+  "total_pages": 12,
+  "total_results": 234
+}

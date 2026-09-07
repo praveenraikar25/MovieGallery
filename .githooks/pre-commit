@@ -1,0 +1,76 @@
+#!/bin/sh
+#
+# ktlint pre-commit gate.
+#
+# Auto-formats staged Kotlin, re-stages the fixes, and blocks the commit only on
+# violations ktlint cannot fix on its own.
+#
+# Activate with: ./gradlew installGitHooks   (or: git config core.hooksPath .githooks)
+# Bypass with:   SKIP_KTLINT=1 git commit    (or: git commit --no-verify)
+
+set -e
+
+if [ -n "$SKIP_KTLINT" ]; then
+    echo "pre-commit: SKIP_KTLINT set — skipping ktlint."
+    exit 0
+fi
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "$REPO_ROOT"
+
+# Staged Kotlin files (added/copied/modified/renamed).
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR -- '*.kt' '*.kts')
+
+if [ -z "$STAGED" ]; then
+    exit 0
+fi
+
+# A staged file that also has unstaged edits cannot be safely formatted: doing so
+# would fold the unstaged work into this commit. Refuse rather than guess.
+UNSTAGED=$(git diff --name-only -- '*.kt' '*.kts')
+PARTIAL=$(
+    printf '%s\n' "$UNSTAGED" | while IFS= read -r u; do
+        [ -n "$u" ] || continue
+        printf '%s\n' "$STAGED" | while IFS= read -r s; do
+            if [ "$s" = "$u" ]; then printf '  %s\n' "$s"; fi
+        done
+    done
+)
+
+if [ -n "$PARTIAL" ]; then
+    echo "pre-commit: these files are staged but also have unstaged changes:"
+    printf '%s\n' "$PARTIAL"
+    echo
+    echo "ktlint would format the working-tree copy and mix unstaged work into the commit."
+    echo "Stage or stash the remaining changes, then commit again."
+    exit 1
+fi
+
+echo "pre-commit: running ktlintFormat…"
+# ktlintFormat fixes what it can and still fails if anything is left over
+# (wildcard imports, over-long lines, …), so this is the usual failure point.
+if ! ./gradlew --quiet ktlintFormat; then
+    echo
+    echo "pre-commit: ktlint found violations it cannot auto-fix."
+    echo "Reports: app/build/reports/ktlint/"
+    echo "Fix them, or bypass with: SKIP_KTLINT=1 git commit"
+    exit 1
+fi
+
+# Re-stage ONLY what was already staged, so unrelated working-tree edits stay out.
+# Deletions can't appear here (--diff-filter excludes them), but -- guards odd names.
+printf '%s\n' "$STAGED" | while IFS= read -r f; do
+    if [ -f "$f" ]; then git add -- "$f"; fi
+done
+
+echo "pre-commit: running ktlintCheck…"
+if ! ./gradlew --quiet ktlintCheck; then
+    echo
+    echo "pre-commit: ktlint found violations it cannot auto-fix."
+    echo "Reports: app/build/reports/ktlint/"
+    echo "Fix them, or bypass with: SKIP_KTLINT=1 git commit"
+    exit 1
+fi
+
+echo "pre-commit: ktlint clean."
+exit 0
