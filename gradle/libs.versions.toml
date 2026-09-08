@@ -19,6 +19,8 @@ kotlinxSerialization = "1.11.0"
 coil = "3.5.0"
 turbine = "1.2.1"
 ktlint = "14.2.0"
+googleServices = "4.5.0"
+firebaseBom = "34.18.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -67,6 +69,12 @@ coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp"
 
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 
+# The BOM pins firebase-ai and the App Check providers together; declare them without versions.
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-ai = { group = "com.google.firebase", name = "firebase-ai" }
+firebase-appcheck-debug = { group = "com.google.firebase", name = "firebase-appcheck-debug" }
+firebase-appcheck-playintegrity = { group = "com.google.firebase", name = "firebase-appcheck-playintegrity" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
@@ -74,3 +82,4 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }

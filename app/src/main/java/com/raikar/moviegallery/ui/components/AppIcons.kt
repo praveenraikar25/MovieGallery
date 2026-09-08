@@ -61,4 +61,57 @@ object AppIcons {
                 }
             }.build()
     }
+
+    val SparkleDouble: ImageVector by lazy {
+        ImageVector
+            .Builder(
+                name = "SparkleDouble",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            ).apply {
+                path(fill = SolidColor(Color.White), pathFillType = PathFillType.NonZero) {
+                    moveTo(12f, 3f)
+                    lineToRelative(1.8f, 4.6f)
+                    lineTo(18f, 9f)
+                    lineToRelative(-4.2f, 1.4f)
+                    lineTo(12f, 15f)
+                    lineToRelative(-1.8f, -4.6f)
+                    lineTo(6f, 9f)
+                    lineToRelative(4.2f, -1.4f)
+                    close()
+                }
+                path(fill = SolidColor(Color.White), pathFillType = PathFillType.NonZero) {
+                    moveTo(19f, 13f)
+                    lineToRelative(0.9f, 2.1f)
+                    lineTo(22f, 16f)
+                    lineToRelative(-2.1f, 0.9f)
+                    lineTo(19f, 19f)
+                    lineToRelative(-0.9f, -2.1f)
+                    lineTo(16f, 16f)
+                    lineToRelative(2.1f, -0.9f)
+                    close()
+                }
+            }.build()
+    }
+
+    val Send: ImageVector by lazy {
+        ImageVector
+            .Builder(
+                name = "Send",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f,
+            ).apply {
+                path(fill = SolidColor(Color.White), pathFillType = PathFillType.NonZero) {
+                    moveTo(20f, 12f)
+                    lineTo(4f, 4f)
+                    lineToRelative(6f, 8f)
+                    lineToRelative(-6f, 8f)
+                    close()
+                }
+            }.build()
+    }
 }

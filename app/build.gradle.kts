@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ktlint)
+    alias(libs.plugins.google.services)
 }
 
 ktlint {
@@ -124,6 +125,14 @@ dependencies {
 
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+
+    // Firebase AI Logic backs the AI movie-search chat. No API key ships with the
+    // app — the Gemini Developer API is brokered by Firebase and gated by App Check,
+    // which is why the provider artifacts are split per build type.
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.ai)
+    debugImplementation(libs.firebase.appcheck.debug)
+    releaseImplementation(libs.firebase.appcheck.playintegrity)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -41,23 +42,41 @@ fun RailMovieCard(
             contentDescription = movie.title,
             modifier = Modifier.width(Sizes.PosterWidth).height(Sizes.PosterHeight),
         )
-        Text(
-            text = movie.title,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 8.dp),
-        )
-        Row(modifier = Modifier.padding(top = 3.dp)) {
-            Text(
-                text = movie.subtitleWithRating,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.movieColors.textMuted,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+        val density = LocalDensity.current
+        val lineHeightMultiplier = 1.2f
+        val titleLineHeight =
+            with(density) {
+                MaterialTheme.typography.labelLarge.fontSize
+                    .toDp() * lineHeightMultiplier
+            }
+        val ratingLineHeight =
+            with(density) {
+                MaterialTheme.typography.labelSmall.fontSize
+                    .toDp() *
+                    lineHeightMultiplier
+            }
+        val textBlockHeight = titleLineHeight * 2 + 8.dp + 3.dp + ratingLineHeight
+        Box(modifier = Modifier.height(textBlockHeight)) {
+            Column {
+                Text(
+                    text = movie.title,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+                Row(modifier = Modifier.padding(top = 3.dp)) {
+                    Text(
+                        text = movie.subtitleWithRating,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.movieColors.textMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
         }
     }
 }

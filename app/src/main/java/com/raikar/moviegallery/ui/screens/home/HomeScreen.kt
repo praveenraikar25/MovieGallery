@@ -48,7 +48,7 @@ fun HomeScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Marquee",
+                text = "MovieGallery",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )

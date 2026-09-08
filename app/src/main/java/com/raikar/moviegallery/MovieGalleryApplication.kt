@@ -20,5 +20,14 @@ class MovieGalleryApplication :
     @Inject
     lateinit var imageLoader: Provider<ImageLoader>
 
+    override fun onCreate() {
+        super.onCreate()
+        // Firebase AI Logic enforces App Check, so without a provider every Gemini
+        // call fails before it reaches the model. The two provider artifacts live on
+        // different variant classpaths, so the implementation is per-source-set.
+        // FirebaseApp itself is initialised by the google-services content provider.
+        installAppCheck()
+    }
+
     override fun newImageLoader(context: PlatformContext): ImageLoader = imageLoader.get()
 }

@@ -50,7 +50,7 @@ fun LoginScreen(
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
-            text = "Marquee",
+            text = "MovieGallery",
             style = MaterialTheme.typography.displayLarge,
             color = MaterialTheme.colorScheme.onBackground,
         )

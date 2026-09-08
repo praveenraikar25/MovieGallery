@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,7 +13,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.HorizontalDivider
@@ -24,13 +27,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.raikar.moviegallery.ui.components.AppIcons
 import com.raikar.moviegallery.ui.components.InitialAvatar
 import com.raikar.moviegallery.ui.theme.Sizes
 import com.raikar.moviegallery.ui.theme.movieColors
 
 @Composable
-fun ProfileScreen(onSignOut: () -> Unit) {
+fun ProfileScreen(
+    onSignOut: () -> Unit,
+    onFindMoviesWithAi: () -> Unit,
+) {
     Column(modifier = Modifier.fillMaxSize()) {
         Text(
             text = "Profile",
@@ -93,6 +103,72 @@ fun ProfileScreen(onSignOut: () -> Unit) {
                 )
             }
         }
+
+        Column(modifier = Modifier.fillMaxWidth().padding(top = 20.dp, start = 20.dp, end = 20.dp)) {
+            Text(
+                text = "DISCOVER",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.movieColors.textMuted,
+                modifier = Modifier.padding(start = 2.dp, bottom = 8.dp),
+            )
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(MaterialTheme.shapes.large)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(1.dp, MaterialTheme.movieColors.border, MaterialTheme.shapes.large)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onFindMoviesWithAi,
+                        ).padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconBadge(icon = AppIcons.SparkleDouble, size = 34.dp)
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Find Movies with AI",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = "Chat with an assistant for personalized picks",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.movieColors.textMuted,
+                    )
+                }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.movieColors.textMuted,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun IconBadge(
+    icon: ImageVector,
+    size: Dp,
+) {
+    Box(
+        modifier =
+            Modifier
+                .size(size)
+                .clip(MaterialTheme.shapes.small)
+                .background(MaterialTheme.colorScheme.primary),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier.size(size / 2),
+        )
     }
 }
 
