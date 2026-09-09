@@ -1,0 +1,54 @@
+# CodeRabbit configuration for MovieGallery
+# https://docs.coderabbit.ai/reference/configuration
+
+language: en-US
+early_access: false
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  auto_review:
+    enabled: true
+    drafts: false
+
+  # Project-specific review guidance (kept in sync with CLAUDE.md and
+  # .claude/skills/android-architecture/SKILL.md).
+  path_instructions:
+    - path: "**/*.kt"
+      instructions: |
+        This is a Kotlin/Jetpack Compose Android app (package com.raikar.moviegallery).
+        Flag anything that violates these project conventions:
+        - UI must use Jetpack Compose with Material 3. Reject new XML layouts or
+          View-based Activities/Fragments.
+        - Dependency injection must use Hilt (@HiltAndroidApp, @AndroidEntryPoint,
+          @HiltViewModel, @Module/@InstallIn). Flag manual/service-locator style DI.
+        - Networking must use Retrofit; async work must use Kotlin Coroutines/Flow.
+          Repositories should expose main-safe suspend functions or Flow; ViewModels
+          should expose StateFlow, not LiveData or callbacks.
+        - Domain-layer code (use cases, domain models) must be pure Kotlin with no
+          android.* imports; dependencies should flow UI -> Domain -> Data, never
+          the reverse, and UI should not depend on Data-layer implementation details
+          directly.
+        - Dependency/plugin versions belong only in gradle/libs.versions.toml, not
+          hardcoded in module build.gradle.kts files.
+        - Kotlin formatting follows ktlint_official style (120-column limit),
+          enforced by ktlint; don't suggest style changes that conflict with it.
+
+    - path: "gradle/libs.versions.toml"
+      instructions: |
+        This is the single source of truth for dependency/plugin versions. Flag any
+        module build.gradle.kts that hardcodes a version instead of referencing this
+        catalog. Prefer the latest stable Kotlin/AGP/library versions.
+
+    - path: "**/build.gradle.kts"
+      instructions: |
+        Versions should come from the libs.versions.toml catalog, not be hardcoded
+        here.
+
+  tools:
+    ktlint:
+      enabled: true
+
+chat:
+  auto_reply: true
