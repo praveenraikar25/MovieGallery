@@ -1,0 +1,28 @@
+{
+  "id": 1061474,
+  "title": "Superman",
+  "release_date": "2025-07-09",
+  "vote_average": 7.383,
+  "genres": [
+    { "id": 878, "name": "Science Fiction" },
+    { "id": 12, "name": "Adventure" },
+    { "id": 28, "name": "Action" }
+  ],
+  "overview": "Superman must reconcile his alien heritage with his human upbringing.",
+  "poster_path": "/ombsmhYUqR4qqOLOxAyr5V8hbyv.jpg",
+  "backdrop_path": "/aZgWnhSHmoYcvNjRfsBmVXpJ7Ln.jpg",
+  "runtime": 130,
+  "tagline": "Look up.",
+  "budget": 225000000,
+  "status": "Released",
+  "credits": {
+    "cast": [
+      { "id": 2, "name": "Rachel Brosnahan", "character": "Lois Lane", "order": 1 },
+      { "id": 1, "name": "David Corenswet", "character": "Clark Kent", "order": 0 },
+      { "id": 3, "name": "Nameless Extra", "character": "", "order": 2 }
+    ],
+    "crew": [
+      { "id": 99, "name": "James Gunn", "job": "Director" }
+    ]
+  }
+}

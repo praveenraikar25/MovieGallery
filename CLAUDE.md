@@ -12,4 +12,11 @@ Always use the latest stable Android tech stack. Concretely:
 - **Networking/async**: Retrofit for network calls, Kotlin Coroutines/Flow for async data. Repositories expose main-safe suspend functions / `Flow`; ViewModels expose `StateFlow`.
 - **Dependencies**: when adding any new library, use its latest stable release and add it via the version catalog.
 
+## Code style
+
+Kotlin formatting is enforced by ktlint (`org.jlleitschuh.gradle.ktlint`), configured via the root `.editorconfig` (`ktlint_official` style, 120-column limit).
+
+- `./gradlew ktlintCheck` — verify; `./gradlew ktlintFormat` — auto-fix.
+- **Once per clone**: run `./gradlew installGitHooks` to point git at `.githooks/`. The `pre-commit` hook then formats staged Kotlin, re-stages the fixes, and blocks the commit on anything ktlint can't auto-fix. Bypass with `SKIP_KTLINT=1 git commit` or `--no-verify`.
+
 For layering and module structure (Clean Architecture: UI / Domain / Data, multi-module strategy), see `.claude/skills/android-architecture/SKILL.md` — keep that skill and this file in sync rather than duplicating details here.
