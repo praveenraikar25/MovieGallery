@@ -53,11 +53,15 @@ tmdb.readAccessToken=your-tmdb-v4-read-access-token
 
 Without a token, the app builds but TMDB requests fail with `401`.
 
-### Firebase AI chat (optional)
+### Firebase setup (required to build)
 
-The AI chat feature requires a `google-services.json` file (from a Firebase project with AI Logic
-enabled) placed in `app/`, plus an App Check debug token for local development. The rest of the
-app works without it.
+The `com.google.gms.google-services` plugin is applied unconditionally, so the project won't
+build without a `google-services.json` file (from a Firebase project) placed in `app/` — the
+build fails with "File google-services.json is missing" otherwise.
+
+The AI chat feature additionally needs that Firebase project to have AI Logic enabled, plus an
+App Check debug token for local development. Every other feature works once `google-services.json`
+is in place, even without AI Logic/App Check configured.
 
 ### Build & run
 
@@ -88,7 +92,7 @@ Run once per clone to enable the pre-commit ktlint hook:
 
 ## Project structure
 
-```
+```text
 app/src/main/java/com/raikar/moviegallery/
 ├── data/        # Repositories, remote (Retrofit) and local data sources, DTOs/mappers
 ├── di/          # Hilt modules
