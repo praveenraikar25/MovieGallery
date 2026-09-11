@@ -1,5 +1,6 @@
 package com.raikar.moviegallery.ui.screens.detail
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -31,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
@@ -85,6 +87,8 @@ private fun MovieDetailContent(
     onToggleWatchlist: () -> Unit,
 ) {
     val movie = detail.summary
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val heroHeight = if (isLandscape) Sizes.HeroHeightLandscape else Sizes.HeroHeight
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
@@ -92,7 +96,7 @@ private fun MovieDetailContent(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(Sizes.HeroHeight)
+                        .height(heroHeight)
                         .background(MovieGradients.brushFor(movie.id)),
             ) {
                 if (movie.backdropUrl != null) {

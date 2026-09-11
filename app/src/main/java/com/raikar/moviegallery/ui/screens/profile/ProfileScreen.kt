@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.HorizontalDivider
@@ -41,7 +43,12 @@ fun ProfileScreen(
     onSignOut: () -> Unit,
     onFindMoviesWithAi: () -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+    ) {
         Text(
             text = "Profile",
             style = MaterialTheme.typography.headlineMedium,
@@ -104,7 +111,12 @@ fun ProfileScreen(
             }
         }
 
-        Column(modifier = Modifier.fillMaxWidth().padding(top = 20.dp, start = 20.dp, end = 20.dp)) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 20.dp, start = 20.dp, end = 20.dp, bottom = 20.dp),
+        ) {
             Text(
                 text = "DISCOVER",
                 style = MaterialTheme.typography.labelMedium,
