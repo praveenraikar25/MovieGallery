@@ -16,4 +16,13 @@ class StaticTvShowRepositoryTest {
             assertTrue(shows.all { it.hasRating })
             assertTrue(shows.all { it.title.isNotBlank() })
         }
+
+    /** The repository promises best-first, and the screen derives its rank from the order. */
+    @Test
+    fun `orders shows by non-increasing rating`() =
+        runTest {
+            val ratings = StaticTvShowRepository().topTvShows().map { it.rating }
+
+            assertEquals(ratings.sortedDescending(), ratings)
+        }
 }

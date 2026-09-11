@@ -19,15 +19,15 @@ class StaticTvShowRepository
             val topShows =
                 listOf(
                     TvShow(1, "Breaking Bad", 2008, 8.9, listOf("Drama", "Crime")),
-                    TvShow(2, "The Wire", 2002, 8.6, listOf("Drama", "Crime")),
-                    TvShow(3, "The Sopranos", 1999, 8.7, listOf("Drama", "Crime")),
-                    TvShow(4, "Chernobyl", 2019, 8.7, listOf("Drama", "History")),
-                    TvShow(5, "Band of Brothers", 2001, 8.5, listOf("Drama", "War")),
-                    TvShow(6, "Better Call Saul", 2015, 8.5, listOf("Drama", "Crime")),
-                    TvShow(7, "Succession", 2018, 8.3, listOf("Drama")),
-                    TvShow(8, "Arcane", 2021, 8.6, listOf("Animation", "Action")),
+                    TvShow(2, "The Sopranos", 1999, 8.7, listOf("Drama", "Crime")),
+                    TvShow(3, "Chernobyl", 2019, 8.7, listOf("Drama", "History")),
+                    TvShow(4, "The Wire", 2002, 8.6, listOf("Drama", "Crime")),
+                    TvShow(5, "Arcane", 2021, 8.6, listOf("Animation", "Action")),
+                    TvShow(6, "Band of Brothers", 2001, 8.5, listOf("Drama", "War")),
+                    TvShow(7, "Better Call Saul", 2015, 8.5, listOf("Drama", "Crime")),
+                    TvShow(8, "The Last of Us", 2023, 8.5, listOf("Drama", "Sci-Fi")),
                     TvShow(9, "Severance", 2022, 8.4, listOf("Drama", "Sci-Fi")),
-                    TvShow(10, "The Last of Us", 2023, 8.5, listOf("Drama", "Sci-Fi")),
+                    TvShow(10, "Succession", 2018, 8.3, listOf("Drama")),
                 )
         }
     }
