@@ -9,6 +9,7 @@ import androidx.navigation.navArgument
 import com.raikar.moviegallery.ui.screens.chat.AiChatScreen
 import com.raikar.moviegallery.ui.screens.detail.MovieDetailScreen
 import com.raikar.moviegallery.ui.screens.login.LoginScreen
+import com.raikar.moviegallery.ui.screens.tvshows.TopTvShowsScreen
 
 @Composable
 fun AppNavHost() {
@@ -33,6 +34,7 @@ fun AppNavHost() {
                     }
                 },
                 onFindMoviesWithAi = { navController.navigate(Routes.AI_CHAT) },
+                onTopTvShows = { navController.navigate(Routes.TOP_TV_SHOWS) },
             )
         }
         composable(
@@ -43,6 +45,9 @@ fun AppNavHost() {
         }
         composable(Routes.AI_CHAT) {
             AiChatScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Routes.TOP_TV_SHOWS) {
+            TopTvShowsScreen(onBack = { navController.popBackStack() })
         }
     }
 }
