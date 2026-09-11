@@ -22,6 +22,7 @@ fun MainScaffold(
     onMovieClick: (Int) -> Unit,
     onSignOut: () -> Unit,
     onFindMoviesWithAi: () -> Unit,
+    onTopTvShows: () -> Unit,
 ) {
     val tabNavController = rememberNavController()
     val backStackEntry by tabNavController.currentBackStackEntryAsState()
@@ -73,7 +74,11 @@ fun MainScaffold(
                 WatchlistScreen(onMovieClick = onMovieClick)
             }
             composable(Routes.PROFILE) {
-                ProfileScreen(onSignOut = onSignOut, onFindMoviesWithAi = onFindMoviesWithAi)
+                ProfileScreen(
+                    onSignOut = onSignOut,
+                    onFindMoviesWithAi = onFindMoviesWithAi,
+                    onTopTvShows = onTopTvShows,
+                )
             }
         }
     }

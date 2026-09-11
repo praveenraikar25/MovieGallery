@@ -42,6 +42,7 @@ import com.raikar.moviegallery.ui.theme.movieColors
 fun ProfileScreen(
     onSignOut: () -> Unit,
     onFindMoviesWithAi: () -> Unit,
+    onTopTvShows: () -> Unit,
 ) {
     Column(
         modifier =
@@ -87,6 +88,8 @@ fun ProfileScreen(
                     .background(MaterialTheme.colorScheme.surface)
                     .border(1.dp, MaterialTheme.movieColors.border, MaterialTheme.shapes.large),
         ) {
+            ProfileRow(label = "Top TV Shows", onClick = onTopTvShows)
+            HorizontalDivider(color = MaterialTheme.movieColors.border)
             ProfileRow(label = "Preferences")
             HorizontalDivider(color = MaterialTheme.movieColors.border)
             ProfileRow(label = "Notifications")
@@ -185,12 +188,25 @@ private fun IconBadge(
 }
 
 @Composable
-private fun ProfileRow(label: String) {
+private fun ProfileRow(
+    label: String,
+    onClick: (() -> Unit)? = null,
+) {
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .then(
+                    if (onClick == null) {
+                        Modifier
+                    } else {
+                        Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onClick,
+                        )
+                    },
+                ).padding(horizontal = 16.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {

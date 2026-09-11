@@ -5,6 +5,7 @@ internal object Routes {
     const val MAIN = "main"
     const val DETAIL = "detail/{movieId}"
     const val AI_CHAT = "ai_chat"
+    const val TOP_TV_SHOWS = "top_tv_shows"
 
     const val HOME = "home"
     const val SEARCH = "search"
