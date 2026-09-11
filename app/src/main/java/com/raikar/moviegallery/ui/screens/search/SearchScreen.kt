@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.raikar.moviegallery.ui.components.AppInput
 import com.raikar.moviegallery.ui.components.ErrorState
 import com.raikar.moviegallery.ui.components.GridMovieCard
+import com.raikar.moviegallery.ui.theme.Sizes
 import com.raikar.moviegallery.ui.theme.movieColors
 
 @Composable
@@ -70,7 +71,7 @@ fun SearchScreen(
             ErrorState(error = error, onRetry = viewModel::retry)
         } else {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
+                columns = GridCells.Adaptive(minSize = Sizes.GridPosterMinWidth),
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
                 contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 90.dp),
