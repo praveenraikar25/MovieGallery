@@ -1,5 +1,7 @@
 package com.raikar.moviegallery.ui.screens.chat
 
+import android.content.ActivityNotFoundException
+import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -88,6 +90,19 @@ fun AiChatScreen(
     // success flag — the destination has to be remembered on this side.
     var pendingCaptureUri by rememberSaveable { mutableStateOf<String?>(null) }
 
+    // A camera failure is the screen's own problem, not a failed reply, so it does not
+    // belong in ChatUiState.error — but it is reported in the same row.
+    var captureError by rememberSaveable { mutableStateOf<String?>(null) }
+
+    // Hides "Take Photo" on hardware that has no camera at all. Deliberately a system
+    // feature check and not Intent.resolveActivity: package visibility makes the latter
+    // return null on API 30+ unless we declare <queries>, so it reports "no camera" on
+    // plenty of devices that have one.
+    val hasCamera =
+        remember(context) {
+            context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
+        }
+
     // The photo picker needs no permission at all, and ACTION_IMAGE_CAPTURE is served
     // by the camera app, so neither of these launchers is gated on a runtime grant.
     val galleryLauncher =
@@ -137,11 +152,16 @@ fun AiChatScreen(
             }
         }
 
-        uiState.error?.let { error ->
+        // A capture failure takes precedence: it is the thing the user just triggered.
+        val errorMessage = captureError ?: uiState.error?.chatMessage
+        errorMessage?.let { message ->
             ChatErrorRow(
-                error = error,
-                onRetry = viewModel::retry,
-                onDismiss = viewModel::dismissError,
+                message = message,
+                // Nothing to retry when no app can take the photo in the first place.
+                onRetry = if (captureError == null) viewModel::retry else null,
+                onDismiss = {
+                    if (captureError != null) captureError = null else viewModel.dismissError()
+                },
             )
         }
 
@@ -160,12 +180,22 @@ fun AiChatScreen(
 
     if (showPosterSheet) {
         PosterSourceSheet(
+            showTakePhoto = hasCamera,
             onDismiss = { showPosterSheet = false },
             onTakePhoto = {
                 showPosterSheet = false
                 val captureUri = createPosterCaptureUri(context)
                 pendingCaptureUri = captureUri.toString()
-                cameraLauncher.launch(captureUri)
+                try {
+                    cameraLauncher.launch(captureUri)
+                } catch (e: ActivityNotFoundException) {
+                    // TakePicture does not guard its own startActivityForResult, so this
+                    // is a crash rather than a failed result. A device can have a camera
+                    // and still have nothing willing to serve ACTION_IMAGE_CAPTURE — a
+                    // managed profile, for one — so hasCamera above cannot pre-empt it.
+                    pendingCaptureUri = null
+                    captureError = "No app on this device can take a photo. Choose from the gallery instead."
+                }
             },
             onChooseFromGallery = {
                 showPosterSheet = false
@@ -422,6 +452,7 @@ private fun TypingBubble(label: String?) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PosterSourceSheet(
+    showTakePhoto: Boolean,
     onDismiss: () -> Unit,
     onTakePhoto: () -> Unit,
     onChooseFromGallery: () -> Unit,
@@ -451,11 +482,13 @@ private fun PosterSourceSheet(
                 color = MaterialTheme.movieColors.textMuted,
                 modifier = Modifier.padding(bottom = 6.dp),
             )
-            PosterSourceRow(
-                icon = AppIcons.Camera,
-                label = "Take Photo",
-                onClick = onTakePhoto,
-            )
+            if (showTakePhoto) {
+                PosterSourceRow(
+                    icon = AppIcons.Camera,
+                    label = "Take Photo",
+                    onClick = onTakePhoto,
+                )
+            }
             PosterSourceRow(
                 icon = AppIcons.Gallery,
                 label = "Choose from Gallery",
@@ -533,8 +566,8 @@ private fun PosterSourceRow(
  */
 @Composable
 private fun ChatErrorRow(
-    error: AppError,
-    onRetry: () -> Unit,
+    message: String,
+    onRetry: (() -> Unit)?,
     onDismiss: () -> Unit,
 ) {
     Row(
@@ -552,13 +585,15 @@ private fun ChatErrorRow(
             modifier = Modifier.size(16.dp),
         )
         Text(
-            text = error.chatMessage,
+            text = message,
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.error,
             modifier = Modifier.weight(1f),
         )
-        TextButton(onClick = onRetry) {
-            Text(text = "Retry", style = MaterialTheme.typography.labelMedium)
+        if (onRetry != null) {
+            TextButton(onClick = onRetry) {
+                Text(text = "Retry", style = MaterialTheme.typography.labelMedium)
+            }
         }
         TextButton(onClick = onDismiss) {
             Text(
