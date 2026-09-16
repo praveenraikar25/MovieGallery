@@ -1,5 +1,9 @@
 package com.raikar.moviegallery.ui.screens.chat
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -82,6 +86,7 @@ fun AiChatScreen(
     val density = LocalDensity.current
     val imeBottomPx = WindowInsets.ime.getBottom(density)
     val context = LocalContext.current
+    var isCameraCaptureAvailable by remember(context) { mutableStateOf(canCapturePhoto(context)) }
 
     // Stored as a String so it survives process death: the camera app is heavy enough
     // to have this activity recreated behind it, and TakePicture hands back only a
@@ -161,11 +166,17 @@ fun AiChatScreen(
     if (showPosterSheet) {
         PosterSourceSheet(
             onDismiss = { showPosterSheet = false },
+            isCameraCaptureAvailable = isCameraCaptureAvailable,
             onTakePhoto = {
                 showPosterSheet = false
                 val captureUri = createPosterCaptureUri(context)
                 pendingCaptureUri = captureUri.toString()
-                cameraLauncher.launch(captureUri)
+                try {
+                    cameraLauncher.launch(captureUri)
+                } catch (_: ActivityNotFoundException) {
+                    pendingCaptureUri = null
+                    isCameraCaptureAvailable = false
+                }
             },
             onChooseFromGallery = {
                 showPosterSheet = false
@@ -423,6 +434,7 @@ private fun TypingBubble(label: String?) {
 @Composable
 private fun PosterSourceSheet(
     onDismiss: () -> Unit,
+    isCameraCaptureAvailable: Boolean,
     onTakePhoto: () -> Unit,
     onChooseFromGallery: () -> Unit,
 ) {
@@ -451,11 +463,13 @@ private fun PosterSourceSheet(
                 color = MaterialTheme.movieColors.textMuted,
                 modifier = Modifier.padding(bottom = 6.dp),
             )
-            PosterSourceRow(
-                icon = AppIcons.Camera,
-                label = "Take Photo",
-                onClick = onTakePhoto,
-            )
+            if (isCameraCaptureAvailable) {
+                PosterSourceRow(
+                    icon = AppIcons.Camera,
+                    label = "Take Photo",
+                    onClick = onTakePhoto,
+                )
+            }
             PosterSourceRow(
                 icon = AppIcons.Gallery,
                 label = "Choose from Gallery",
@@ -478,6 +492,9 @@ private fun PosterSourceSheet(
         }
     }
 }
+
+private fun canCapturePhoto(context: Context): Boolean =
+    Intent(MediaStore.ACTION_IMAGE_CAPTURE).resolveActivity(context.packageManager) != null
 
 @Composable
 private fun PosterSourceRow(
