@@ -4,6 +4,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.ai.GenerativeModel
 import com.google.firebase.ai.ai
 import com.google.firebase.ai.type.GenerativeBackend
+import com.google.firebase.ai.type.RequestOptions
 import com.google.firebase.ai.type.content
 import dagger.Module
 import dagger.Provides
@@ -11,8 +12,22 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
-/** The model backing the AI movie-search chat. */
-private const val CHAT_MODEL_NAME = "gemini-3.7-flash"
+/**
+ * The model backing the AI movie-search chat.
+ *
+ * Not `gemini-3.7-flash`: on this project's free tier that model is capped at 20
+ * requests and is heavily loaded, so calls come back as HTTP 500 "experiencing high
+ * demand", 429 `RESOURCE_EXHAUSTED`, or — most often — never come back at all.
+ * `gemini-3.6-flash` answers reliably in 3-5s on the same project, images included.
+ */
+private const val CHAT_MODEL_NAME = "gemini-3.6-flash"
+
+/**
+ * A stalled request has to fail rather than hang: the SDK's 180s default leaves the
+ * chat's typing bubble spinning for three minutes with no way out, which reads as a
+ * frozen screen. Image sends are the slow case at ~10s, so 60s is generous.
+ */
+private const val REQUEST_TIMEOUT_MILLIS = 60_000L
 
 /**
  * Steers the model into the one job this screen has. The watchlist rule matters:
@@ -69,5 +84,6 @@ object AiModule {
         Firebase.ai(backend = GenerativeBackend.googleAI()).generativeModel(
             modelName = CHAT_MODEL_NAME,
             systemInstruction = content { text(MOVIE_ASSISTANT_SYSTEM_PROMPT) },
+            requestOptions = RequestOptions(timeoutInMillis = REQUEST_TIMEOUT_MILLIS),
         )
 }
