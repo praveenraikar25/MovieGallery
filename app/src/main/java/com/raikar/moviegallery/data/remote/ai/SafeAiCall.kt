@@ -33,7 +33,10 @@ internal inline fun <T> safeAiCall(block: () -> T): DataResult<T> =
     } catch (e: ServiceDisabledException) {
         DataResult.Failure(AppError.Unauthorized)
     } catch (e: RequestTimeoutException) {
-        DataResult.Failure(AppError.Network)
+        // Not AppError.Network: the usual cause is the model stalling, not the device
+        // being offline, and telling the user to check their internet sends them after
+        // the wrong thing. Unknown's copy just offers a retry, which is the right advice.
+        DataResult.Failure(AppError.Unknown(e))
     } catch (e: FirebaseAiSerializationException) {
         DataResult.Failure(AppError.Serialization)
     } catch (e: IOException) {

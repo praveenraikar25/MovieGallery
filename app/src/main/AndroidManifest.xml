@@ -24,6 +24,25 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+          Receives camera captures for the AI chat's poster search. The camera app
+          needs a URI it may write to, so the capture destination is handed over as a
+          content:// URI rather than a file path.
+
+          Note there is deliberately no CAMERA permission: ACTION_IMAGE_CAPTURE is
+          handled by the camera app, and declaring CAMERA here would oblige us to
+          request it at runtime for no gain.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>
