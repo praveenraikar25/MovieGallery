@@ -1,5 +1,10 @@
 package com.raikar.moviegallery.ui.screens.chat
 
+import android.content.ActivityNotFoundException
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -10,10 +15,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -29,13 +36,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,15 +55,24 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import com.raikar.moviegallery.domain.model.AppError
 import com.raikar.moviegallery.ui.components.AppIcons
 import com.raikar.moviegallery.ui.theme.movieColors
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun AiChatScreen(
@@ -62,9 +81,52 @@ fun AiChatScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var input by rememberSaveable { mutableStateOf("") }
+    var showPosterSheet by rememberSaveable { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val density = LocalDensity.current
     val imeBottomPx = WindowInsets.ime.getBottom(density)
+    val context = LocalContext.current
+
+    // Stored as a String so it survives process death: the camera app is heavy enough
+    // to have this activity recreated behind it, and TakePicture hands back only a
+    // success flag — the destination has to be remembered on this side.
+    var pendingCaptureUri by rememberSaveable { mutableStateOf<String?>(null) }
+
+    // A camera failure is the screen's own problem, not a failed reply, so it does not
+    // belong in ChatUiState.error — but it is reported in the same row.
+    var captureError by rememberSaveable { mutableStateOf<String?>(null) }
+
+    // Hides "Take Photo" on hardware that has no camera at all. Deliberately a system
+    // feature check and not Intent.resolveActivity: package visibility makes the latter
+    // return null on API 30+ unless we declare <queries>, so it reports "no camera" on
+    // plenty of devices that have one.
+    val hasCamera =
+        remember(context) {
+            context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
+        }
+
+    // The photo picker needs no permission at all, and ACTION_IMAGE_CAPTURE is served
+    // by the camera app, so neither of these launchers is gated on a runtime grant.
+    val galleryLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            if (uri != null) viewModel.sendPoster(uri.toString())
+        }
+    val cameraLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { saved ->
+            val captureUri = pendingCaptureUri
+            pendingCaptureUri = null
+            when {
+                captureUri == null -> Unit
+                saved -> viewModel.sendPoster(captureUri)
+                // createPosterCaptureUri already made the file, so backing out of the
+                // camera's confirm screen would otherwise leave it behind for good.
+                else -> deletePosterCapture(context, captureUri)
+            }
+        }
+
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) { prunePosterCaptures(context) }
+    }
 
     // The typing indicator is a list item of its own, so the count it contributes has
     // to be part of the scroll key — otherwise the indicator appears off-screen.
@@ -96,15 +158,22 @@ fun AiChatScreen(
                 ChatBubble(message = message)
             }
             if (uiState.isSending) {
-                item(key = TYPING_INDICATOR_KEY) { TypingBubble() }
+                item(key = TYPING_INDICATOR_KEY) {
+                    TypingBubble(label = if (uiState.isIdentifyingPoster) "Identifying poster…" else null)
+                }
             }
         }
 
-        uiState.error?.let { error ->
+        // A capture failure takes precedence: it is the thing the user just triggered.
+        val errorMessage = captureError ?: uiState.error?.chatMessage
+        errorMessage?.let { message ->
             ChatErrorRow(
-                error = error,
-                onRetry = viewModel::retry,
-                onDismiss = viewModel::dismissError,
+                message = message,
+                // Nothing to retry when no app can take the photo in the first place.
+                onRetry = if (captureError == null) viewModel::retry else null,
+                onDismiss = {
+                    if (captureError != null) captureError = null else viewModel.dismissError()
+                },
             )
         }
 
@@ -113,9 +182,54 @@ fun AiChatScreen(
             value = input,
             onValueChange = { input = it },
             enabled = !uiState.isSending,
+            // Both of these start a new attempt, which makes the previous capture
+            // failure history. Left standing it would outlive the action that caused it
+            // and, because it takes precedence below, hide a later retryable error and
+            // suppress its Retry button.
+            onAttachClick = {
+                captureError = null
+                showPosterSheet = true
+            },
             onSend = {
+                captureError = null
                 viewModel.sendMessage(input)
                 input = ""
+            },
+        )
+    }
+
+    if (showPosterSheet) {
+        PosterSourceSheet(
+            showTakePhoto = hasCamera,
+            onDismiss = { showPosterSheet = false },
+            onTakePhoto = {
+                showPosterSheet = false
+                val captureUri = createPosterCaptureUri(context)
+                pendingCaptureUri = captureUri.toString()
+                try {
+                    cameraLauncher.launch(captureUri)
+                } catch (e: ActivityNotFoundException) {
+                    // TakePicture does not guard its own startActivityForResult, so this
+                    // is a crash rather than a failed result. A device can have a camera
+                    // and still have nothing willing to serve ACTION_IMAGE_CAPTURE — a
+                    // managed profile, for one — so hasCamera above cannot pre-empt it.
+                    pendingCaptureUri = null
+                    captureError = "No app on this device can take a photo."
+                }
+            },
+            onChooseFromGallery = {
+                showPosterSheet = false
+                try {
+                    galleryLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                    )
+                } catch (e: ActivityNotFoundException) {
+                    // Same hazard as the camera launch above: launch() goes straight to
+                    // startActivityForResult, so nothing to handle the intent is a crash.
+                    // minSdk 29 means every install takes PickVisualMedia's ACTION_OPEN_DOCUMENT
+                    // fallback rather than the system photo picker, and that can be absent.
+                    captureError = "No app on this device can pick an image."
+                }
             },
         )
     }
@@ -186,6 +300,24 @@ private fun ChatBubble(message: ChatMessage) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (message.isUser) Arrangement.End else Arrangement.Start,
     ) {
+        // An attached image is the bubble, not something inside one: it gets the
+        // bubble's shape but none of its padding or fill, so no background peeks out
+        // around the poster.
+        if (message.imageUri != null) {
+            AsyncImage(
+                model = message.imageUri,
+                contentDescription = "Poster you sent",
+                contentScale = ContentScale.Crop,
+                modifier =
+                    Modifier
+                        .width(PosterBubbleWidth)
+                        .aspectRatio(POSTER_ASPECT_RATIO)
+                        .clip(shape)
+                        .background(MaterialTheme.movieColors.surfaceAlt),
+            )
+            return@Row
+        }
+
         Box(
             modifier =
                 Modifier
@@ -208,6 +340,7 @@ private fun ChatInputBar(
     value: String,
     onValueChange: (String) -> Unit,
     enabled: Boolean,
+    onAttachClick: () -> Unit,
     onSend: () -> Unit,
 ) {
     Row(
@@ -218,6 +351,14 @@ private fun ChatInputBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        CircularIconButton(
+            icon = AppIcons.Plus,
+            contentDescription = "Add a movie poster",
+            background = MaterialTheme.movieColors.surfaceAlt,
+            tint = MaterialTheme.movieColors.textMuted,
+            enabled = enabled,
+            onClick = onAttachClick,
+        )
         Box(
             modifier =
                 Modifier
@@ -246,50 +387,203 @@ private fun ChatInputBar(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        Box(
-            modifier =
-                Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        enabled = enabled && value.isNotBlank(),
-                        onClick = onSend,
-                    ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = AppIcons.Send,
-                contentDescription = "Send",
-                tint = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.size(16.dp),
-            )
-        }
+        CircularIconButton(
+            icon = AppIcons.Send,
+            contentDescription = "Send",
+            background = MaterialTheme.colorScheme.primary,
+            tint = MaterialTheme.colorScheme.onPrimary,
+            enabled = enabled && value.isNotBlank(),
+            onClick = onSend,
+        )
     }
 }
 
-/** Shown in place of a reply while the model is generating one. */
+/**
+ * The 36.dp circular control the input bar is built from. Disabled is shown by
+ * fading the whole button rather than recolouring it, which is what the design does
+ * for the attach button while a reply is in flight.
+ */
 @Composable
-private fun TypingBubble() {
+private fun CircularIconButton(
+    icon: ImageVector,
+    contentDescription: String,
+    background: Color,
+    tint: Color,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier =
+            Modifier
+                .size(InputControlSize)
+                .alpha(if (enabled) 1f else DISABLED_ALPHA)
+                .clip(CircleShape)
+                .background(background)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    enabled = enabled,
+                    onClick = onClick,
+                ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = tint,
+            modifier = Modifier.size(16.dp),
+        )
+    }
+}
+
+/**
+ * Shown in place of a reply while the model is generating one. [label] names the
+ * wait when it is longer than a text reply — identifying a poster has to upload the
+ * image first, so silence there reads as a hang.
+ */
+@Composable
+private fun TypingBubble(label: String?) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Start,
     ) {
-        Box(
+        Row(
             modifier =
                 Modifier
                     .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 4.dp, bottomEnd = 16.dp))
                     .background(MaterialTheme.movieColors.surfaceAlt)
                     .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             CircularProgressIndicator(
                 color = MaterialTheme.movieColors.textMuted,
                 strokeWidth = 2.dp,
                 modifier = Modifier.size(14.dp),
             )
+            if (label != null) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.movieColors.textMuted,
+                )
+            }
         }
+    }
+}
+
+/**
+ * The poster source chooser. A sheet rather than two icons in the input bar: the bar
+ * is already three controls wide at 36.dp each, and the sheet has room to say what
+ * the image is for, which the icons could not.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PosterSourceSheet(
+    showTakePhoto: Boolean,
+    onDismiss: () -> Unit,
+    onTakePhoto: () -> Unit,
+    onChooseFromGallery: () -> Unit,
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(),
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = "Add a movie poster",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = "I'll identify the title from the image",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.movieColors.textMuted,
+                modifier = Modifier.padding(bottom = 6.dp),
+            )
+            if (showTakePhoto) {
+                PosterSourceRow(
+                    icon = AppIcons.Camera,
+                    label = "Take Photo",
+                    onClick = onTakePhoto,
+                )
+            }
+            PosterSourceRow(
+                icon = AppIcons.Gallery,
+                label = "Choose from Gallery",
+                onClick = onChooseFromGallery,
+            )
+            Text(
+                text = "Cancel",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.movieColors.textMuted,
+                textAlign = TextAlign.Center,
+                modifier =
+                    Modifier
+                        .padding(top = 4.dp)
+                        .fillMaxWidth()
+                        .clip(MaterialTheme.shapes.large)
+                        .background(MaterialTheme.movieColors.surfaceAlt)
+                        .clickable(onClick = onDismiss)
+                        .padding(vertical = 13.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun PosterSourceRow(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.large)
+                .background(MaterialTheme.movieColors.surfaceAlt)
+                .clickable(onClick = onClick)
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(34.dp)
+                    .clip(MaterialTheme.shapes.small)
+                    .background(MaterialTheme.colorScheme.primary),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(17.dp),
+            )
+        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        Icon(
+            imageVector = AppIcons.ChevronRight,
+            contentDescription = null,
+            tint = MaterialTheme.movieColors.textMuted,
+            modifier = Modifier.size(16.dp),
+        )
     }
 }
 
@@ -300,8 +594,8 @@ private fun TypingBubble() {
  */
 @Composable
 private fun ChatErrorRow(
-    error: AppError,
-    onRetry: () -> Unit,
+    message: String,
+    onRetry: (() -> Unit)?,
     onDismiss: () -> Unit,
 ) {
     Row(
@@ -319,13 +613,15 @@ private fun ChatErrorRow(
             modifier = Modifier.size(16.dp),
         )
         Text(
-            text = error.chatMessage,
+            text = message,
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.error,
             modifier = Modifier.weight(1f),
         )
-        TextButton(onClick = onRetry) {
-            Text(text = "Retry", style = MaterialTheme.typography.labelMedium)
+        if (onRetry != null) {
+            TextButton(onClick = onRetry) {
+                Text(text = "Retry", style = MaterialTheme.typography.labelMedium)
+            }
         }
         TextButton(onClick = onDismiss) {
             Text(
@@ -356,3 +652,13 @@ private const val TYPING_INDICATOR_KEY = "typing-indicator"
 
 /** Keeps long replies readable without stretching one-line replies to match. */
 private val BubbleMaxWidth = 280.dp
+
+/** Wide enough to recognise the poster, narrow enough to stay a chat bubble. */
+private val PosterBubbleWidth = 120.dp
+
+/** Standard poster proportions, so a photographed poster is not letterboxed. */
+private const val POSTER_ASPECT_RATIO = 2f / 3f
+
+private val InputControlSize = 36.dp
+
+private const val DISABLED_ALPHA = 0.5f

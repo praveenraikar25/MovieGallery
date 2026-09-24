@@ -3,6 +3,7 @@ package com.raikar.moviegallery.ui.screens.chat
 import com.raikar.moviegallery.domain.model.AppError
 import com.raikar.moviegallery.domain.model.ChatTurn
 import com.raikar.moviegallery.domain.model.DataResult
+import com.raikar.moviegallery.domain.usecase.IdentifyMoviePosterUseCase
 import com.raikar.moviegallery.domain.usecase.SendChatMessageUseCase
 import com.raikar.moviegallery.testutil.FakeAiChatRepository
 import com.raikar.moviegallery.testutil.MainDispatcherRule
@@ -22,7 +23,11 @@ class AiChatViewModelTest {
 
     private val repository = FakeAiChatRepository()
 
-    private fun viewModel() = AiChatViewModel(SendChatMessageUseCase(repository))
+    private fun viewModel() =
+        AiChatViewModel(
+            SendChatMessageUseCase(repository),
+            IdentifyMoviePosterUseCase(repository),
+        )
 
     @Test
     fun `starts with only the local greeting`() {
@@ -150,4 +155,100 @@ class AiChatViewModelTest {
 
             assertNull(viewModel.uiState.value.error)
         }
+
+    @Test
+    fun `sends a poster as an image bubble and appends the reply`() =
+        runTest {
+            repository.result = DataResult.Success("That's Arrival (2016).")
+            val viewModel = viewModel()
+
+            viewModel.sendPoster(POSTER_URI)
+
+            val messages = viewModel.uiState.value.messages
+            assertEquals(3, messages.size)
+            assertEquals(POSTER_URI, messages[1].imageUri)
+            assertTrue(messages[1].isUser)
+            assertEquals("", messages[1].text)
+            assertEquals("That's Arrival (2016).", messages[2].text)
+            assertNull(messages[2].imageUri)
+            assertEquals(POSTER_URI, repository.lastImageUri)
+            assertTrue(repository.lastCallWasPoster)
+        }
+
+    @Test
+    fun `flags poster identification only while the request is in flight`() =
+        runTest {
+            val viewModel = viewModel()
+            var inFlight: ChatUiState? = null
+            repository.onCall = { inFlight = viewModel.uiState.value }
+
+            viewModel.sendPoster(POSTER_URI)
+
+            assertTrue(checkNotNull(inFlight).isSending)
+            assertTrue(checkNotNull(inFlight).isIdentifyingPoster)
+            assertFalse(viewModel.uiState.value.isSending)
+            assertFalse(viewModel.uiState.value.isIdentifyingPoster)
+        }
+
+    @Test
+    fun `a text send never flags poster identification`() =
+        runTest {
+            val viewModel = viewModel()
+            var inFlight: ChatUiState? = null
+            repository.onCall = { inFlight = viewModel.uiState.value }
+
+            viewModel.sendMessage("something cerebral")
+
+            assertTrue(checkNotNull(inFlight).isSending)
+            assertFalse(checkNotNull(inFlight).isIdentifyingPoster)
+        }
+
+    @Test
+    fun `an image turn reaches history as a stand-in for its missing text`() =
+        runTest {
+            val viewModel = viewModel()
+            viewModel.sendPoster(POSTER_URI)
+
+            viewModel.sendMessage("what else is like it?")
+
+            assertEquals(
+                listOf(
+                    ChatTurn(text = "[sent a photo of a movie poster]", isUser = true),
+                    ChatTurn(text = "A reply", isUser = false),
+                ),
+                repository.lastHistory,
+            )
+        }
+
+    @Test
+    fun `ignores a second poster while one is in flight`() =
+        runTest {
+            val viewModel = viewModel()
+            repository.onCall = { viewModel.sendPoster("content://poster/second") }
+
+            viewModel.sendPoster(POSTER_URI)
+
+            assertEquals(1, repository.callCount)
+            assertEquals(POSTER_URI, repository.lastImageUri)
+        }
+
+    @Test
+    fun `retry resends the poster rather than a text message`() =
+        runTest {
+            repository.result = DataResult.Failure(AppError.Network)
+            val viewModel = viewModel()
+            viewModel.sendPoster(POSTER_URI)
+
+            repository.result = DataResult.Success("That's Arrival (2016).")
+            viewModel.retry()
+
+            val messages = viewModel.uiState.value.messages
+            assertTrue(repository.lastCallWasPoster)
+            assertEquals(POSTER_URI, repository.lastImageUri)
+            assertEquals(3, messages.size)
+            assertEquals(POSTER_URI, messages[1].imageUri)
+            assertNull(viewModel.uiState.value.error)
+        }
 }
+
+private const val POSTER_URI = "content://media/external/images/media/42"

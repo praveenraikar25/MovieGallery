@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Grants the camera app write access to the one cache subdirectory poster captures
+  land in. Kept as narrow as possible: nothing else under cacheDir is exposed.
+  Mirrored by CAPTURE_DIR in ui/screens/chat/PosterCapture.kt.
+-->
+<paths>
+    <cache-path
+        name="poster_captures"
+        path="poster-captures/" />
+</paths>
