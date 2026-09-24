@@ -56,4 +56,4 @@ private fun CastMemberDto.toDomain(): CastMember =
  * TMDB dates look like `2024-03-15`, but the field is frequently `""` (notably on
  * `upcoming`) and occasionally malformed, so this never indexes into the string.
  */
-private fun String?.toReleaseYear(): Int? = this?.take(4)?.toIntOrNull()
+internal fun String?.toReleaseYear(): Int? = this?.take(4)?.toIntOrNull()

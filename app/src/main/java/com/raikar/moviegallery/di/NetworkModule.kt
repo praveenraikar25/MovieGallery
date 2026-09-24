@@ -5,7 +5,9 @@ import coil3.ImageLoader
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
 import com.raikar.moviegallery.BuildConfig
+import com.raikar.moviegallery.data.remote.BffApi
 import com.raikar.moviegallery.data.remote.TmdbApi
+import com.raikar.moviegallery.di.qualifier.BffClient
 import com.raikar.moviegallery.di.qualifier.TmdbClient
 import dagger.Module
 import dagger.Provides
@@ -99,6 +101,40 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideTmdbApi(retrofit: Retrofit): TmdbApi = retrofit.create(TmdbApi::class.java)
+
+    /** Derived from the shared base client; the BFF demo host takes no auth header. */
+    @Provides
+    @Singleton
+    @BffClient
+    fun provideBffOkHttpClient(base: OkHttpClient): OkHttpClient =
+        base
+            .newBuilder()
+            .addInterceptor(
+                HttpLoggingInterceptor().apply {
+                    level =
+                        if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
+                },
+            ).build()
+
+    @Provides
+    @Singleton
+    @BffClient
+    fun provideBffRetrofit(
+        @BffClient client: OkHttpClient,
+        json: Json,
+    ): Retrofit =
+        Retrofit
+            .Builder()
+            .baseUrl(BffApi.BASE_URL)
+            .client(client)
+            .addConverterFactory(json.asConverterFactory("application/json; charset=utf-8".toMediaType()))
+            .build()
+
+    @Provides
+    @Singleton
+    fun provideBffApi(
+        @BffClient retrofit: Retrofit,
+    ): BffApi = retrofit.create(BffApi::class.java)
 
     /** Uses the unauthenticated client; posters need no credentials. */
     @Provides
