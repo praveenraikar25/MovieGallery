@@ -34,19 +34,23 @@ class PosterImageDecoder
         }
 
         /**
-         * Largest power-of-two downscale that still leaves the long edge at or above
-         * [MAX_EDGE_PX]. A 12MP capture is ~4000px on its long edge; the model tiles
-         * the image internally anyway, so sending it full-size only costs upload time.
+         * Smallest power-of-two downscale that brings the long edge to [MAX_EDGE_PX] or
+         * below. A 12MP capture is ~4000px on its long edge; the model tiles the image
+         * internally anyway, so sending it full-size only costs upload time and heap.
+         *
+         * Note the comparison is on the *downscaled* edge, not half of it: stopping while
+         * the edge was still at or above the cap left it anywhere up to 2*[MAX_EDGE_PX],
+         * so a 3000x4000 capture decoded to 1500x2000 — four times the intended pixels
+         * and an 11MB software bitmap.
          */
         private fun sampleSizeFor(
             width: Int,
             height: Int,
         ): Int {
+            val longEdge = maxOf(width, height)
             var sampleSize = 1
-            var longEdge = maxOf(width, height)
-            while (longEdge / 2 >= MAX_EDGE_PX) {
+            while (longEdge / sampleSize > MAX_EDGE_PX) {
                 sampleSize *= 2
-                longEdge /= 2
             }
             return sampleSize
         }

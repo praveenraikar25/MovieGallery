@@ -71,6 +71,8 @@ import coil3.compose.AsyncImage
 import com.raikar.moviegallery.domain.model.AppError
 import com.raikar.moviegallery.ui.components.AppIcons
 import com.raikar.moviegallery.ui.theme.movieColors
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun AiChatScreen(
@@ -113,8 +115,18 @@ fun AiChatScreen(
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { saved ->
             val captureUri = pendingCaptureUri
             pendingCaptureUri = null
-            if (saved && captureUri != null) viewModel.sendPoster(captureUri)
+            when {
+                captureUri == null -> Unit
+                saved -> viewModel.sendPoster(captureUri)
+                // createPosterCaptureUri already made the file, so backing out of the
+                // camera's confirm screen would otherwise leave it behind for good.
+                else -> deletePosterCapture(context, captureUri)
+            }
         }
+
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) { prunePosterCaptures(context) }
+    }
 
     // The typing indicator is a list item of its own, so the count it contributes has
     // to be part of the scroll key — otherwise the indicator appears off-screen.
@@ -170,8 +182,16 @@ fun AiChatScreen(
             value = input,
             onValueChange = { input = it },
             enabled = !uiState.isSending,
-            onAttachClick = { showPosterSheet = true },
+            // Both of these start a new attempt, which makes the previous capture
+            // failure history. Left standing it would outlive the action that caused it
+            // and, because it takes precedence below, hide a later retryable error and
+            // suppress its Retry button.
+            onAttachClick = {
+                captureError = null
+                showPosterSheet = true
+            },
             onSend = {
+                captureError = null
                 viewModel.sendMessage(input)
                 input = ""
             },
@@ -194,14 +214,22 @@ fun AiChatScreen(
                     // and still have nothing willing to serve ACTION_IMAGE_CAPTURE — a
                     // managed profile, for one — so hasCamera above cannot pre-empt it.
                     pendingCaptureUri = null
-                    captureError = "No app on this device can take a photo. Choose from the gallery instead."
+                    captureError = "No app on this device can take a photo."
                 }
             },
             onChooseFromGallery = {
                 showPosterSheet = false
-                galleryLauncher.launch(
-                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                )
+                try {
+                    galleryLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                    )
+                } catch (e: ActivityNotFoundException) {
+                    // Same hazard as the camera launch above: launch() goes straight to
+                    // startActivityForResult, so nothing to handle the intent is a crash.
+                    // minSdk 29 means every install takes PickVisualMedia's ACTION_OPEN_DOCUMENT
+                    // fallback rather than the system photo picker, and that can be absent.
+                    captureError = "No app on this device can pick an image."
+                }
             },
         )
     }
