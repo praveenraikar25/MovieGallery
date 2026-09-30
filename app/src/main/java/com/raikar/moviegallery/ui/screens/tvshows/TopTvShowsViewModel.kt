@@ -58,7 +58,9 @@ class TopTvShowsViewModel
                     is DataResult.Success ->
                         _uiState.update {
                             it.copy(
-                                shows = it.shows + result.data.shows,
+                                // A show's rank can shift between requests, so the same id can
+                                // reappear across pages — LazyVerticalGrid crashes on duplicate keys.
+                                shows = (it.shows + result.data.shows).distinctBy { show -> show.id },
                                 page = result.data.page,
                                 totalPages = result.data.totalPages,
                                 isLoading = false,

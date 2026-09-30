@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -31,6 +32,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.raikar.moviegallery.ui.components.AppButton
+import com.raikar.moviegallery.ui.components.ButtonVariant
 import com.raikar.moviegallery.ui.components.ErrorState
 import com.raikar.moviegallery.ui.components.GridTvShowCard
 import com.raikar.moviegallery.ui.components.LoadingState
@@ -56,7 +59,9 @@ fun TopTvShowsScreen(
             layoutInfo.totalItemsCount - lastVisible
         }.distinctUntilChanged()
             .collect { remaining ->
-                if (remaining in 0 until PREFETCH_THRESHOLD) {
+                // Don't auto-retry a failed load-more: that would hammer the server in a
+                // scroll-position-triggered loop. The footer's retry button is explicit instead.
+                if (remaining in 0 until PREFETCH_THRESHOLD && viewModel.uiState.value.error == null) {
                     viewModel.loadNextPage()
                 }
             }
@@ -68,7 +73,10 @@ fun TopTvShowsScreen(
         val error = uiState.error
         when {
             uiState.isLoading -> LoadingState()
-            error != null && uiState.isEmpty -> ErrorState(error = error, onRetry = viewModel::loadNextPage)
+            // Checked against the raw list, not uiState.isEmpty: that flag requires no error,
+            // so "error != null && isEmpty" can never be true and this branch would never show.
+            error != null && uiState.shows.isEmpty() -> ErrorState(error = error, onRetry = viewModel::loadNextPage)
+            uiState.isEmpty -> EmptyTvShowsState()
             else ->
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(minSize = Sizes.GridPosterMinWidth),
@@ -92,6 +100,10 @@ fun TopTvShowsScreen(
                             ) {
                                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                             }
+                        }
+                    } else if (error != null) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            LoadMoreErrorFooter(onRetry = viewModel::loadNextPage)
                         }
                     }
                 }
@@ -128,5 +140,41 @@ private fun TopTvShowsHeader(onBack: () -> Unit) {
                 color = MaterialTheme.movieColors.textMuted,
             )
         }
+    }
+}
+
+@Composable
+private fun EmptyTvShowsState(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.fillMaxSize().padding(horizontal = 40.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = "No shows to display",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+/** Shown as a full-span grid footer when a load-more request fails, instead of retrying silently. */
+@Composable
+private fun LoadMoreErrorFooter(onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = "Couldn't load more shows.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.movieColors.textMuted,
+        )
+        AppButton(
+            text = "Retry",
+            onClick = onRetry,
+            variant = ButtonVariant.Secondary,
+            modifier = Modifier.padding(top = 10.dp).widthIn(max = 160.dp),
+        )
     }
 }

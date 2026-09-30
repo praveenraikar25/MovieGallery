@@ -131,6 +131,39 @@ class TopTvShowsViewModelTest {
         }
 
     @Test
+    fun `a show that reappears on a later page is not duplicated`() =
+        runTest {
+            // Ranked lists can shift between requests, so the same id can reappear.
+            val repository =
+                FakeTvShowRepository(
+                    pages =
+                        mapOf(
+                            1 to
+                                DataResult.Success(
+                                    TvShowPage(shows = listOf(show(1), show(2)), page = 1, totalPages = 2),
+                                ),
+                            2 to
+                                DataResult.Success(
+                                    TvShowPage(shows = listOf(show(2), show(3)), page = 2, totalPages = 2),
+                                ),
+                        ),
+                )
+
+            val viewModel = TopTvShowsViewModel(GetTopTvShowsUseCase(repository))
+
+            viewModel.uiState.test {
+                awaitItem() // page 1 loaded
+
+                viewModel.loadNextPage()
+
+                val loaded = awaitItem()
+                assertEquals(listOf(1, 2, 3), loaded.shows.map { it.id })
+
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
     fun `a failure surfaces as an error and retry re-requests the same page`() =
         runTest {
             var attempt = 0
