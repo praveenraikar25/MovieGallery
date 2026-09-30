@@ -2,7 +2,7 @@ package com.raikar.moviegallery.di
 
 import com.raikar.moviegallery.data.repository.AiChatRepositoryImpl
 import com.raikar.moviegallery.data.repository.MovieRepositoryImpl
-import com.raikar.moviegallery.data.repository.StaticTvShowRepository
+import com.raikar.moviegallery.data.repository.TvShowRepositoryImpl
 import com.raikar.moviegallery.data.repository.WatchlistRepositoryImpl
 import com.raikar.moviegallery.domain.repository.AiChatRepository
 import com.raikar.moviegallery.domain.repository.MovieRepository
@@ -31,5 +31,5 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindTvShowRepository(impl: StaticTvShowRepository): TvShowRepository
+    abstract fun bindTvShowRepository(impl: TvShowRepositoryImpl): TvShowRepository
 }

@@ -1,0 +1,34 @@
+{
+  "page": 1,
+  "totalPages": 500,
+  "totalResults": 10000,
+  "results": [
+    {
+      "id": 1399,
+      "name": "Game of Thrones",
+      "overview": "Seven noble families fight for control of the mythical land of Westeros.",
+      "firstAirDate": "2011-04-17",
+      "voteAverage": 8.4,
+      "posterUrl": "https://image.tmdb.org/t/p/w500/xxx.jpg",
+      "genres": ["Drama", "Sci-Fi & Fantasy"]
+    },
+    {
+      "id": 2,
+      "name": "Untitled Pilot",
+      "overview": "",
+      "firstAirDate": null,
+      "voteAverage": 0.0,
+      "posterUrl": null,
+      "genres": []
+    },
+    {
+      "id": 3,
+      "name": "Short Date Show",
+      "overview": "A show with a partial air date.",
+      "firstAirDate": "2026-03",
+      "voteAverage": 6.2,
+      "posterUrl": null,
+      "genres": ["Comedy"]
+    }
+  ]
+}
