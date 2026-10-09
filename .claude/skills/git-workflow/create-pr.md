@@ -19,7 +19,8 @@
      🤖 Generated with [Claude Code](https://claude.com/claude-code)
      ```
 
-   - Command: `gh pr create --base main --title "<title>" --body "$(cat <<'EOF' ... EOF)"`.
+   - Command: `gh pr create --base main --title '<title>' --body "$(cat <<'EOF' ... EOF)"`.
+   - Pass the title in **single quotes** (escape any `'` inside it as `'\''`) so `$(...)`, backticks, and `$VAR` in commit- or branch-derived text are never evaluated by the shell. Keep the heredoc delimiter quoted (`'EOF'`) for the same reason.
    - Only tick test-plan items that were actually run.
 5. Return the PR URL to the user.
 6. In the desktop app: call the `ccd_pr` `get_status` tool and, if it doesn't report this PR, `bind_pr` it. Offer Auto-fix based on CI. Don't poll CI yourself and don't enable auto-merge unless asked.
