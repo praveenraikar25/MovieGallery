@@ -21,6 +21,21 @@ Kotlin formatting is enforced by ktlint (`org.jlleitschuh.gradle.ktlint`), confi
 
 For layering and module structure (Clean Architecture: UI / Domain / Data, multi-module strategy), see `.claude/skills/android-architecture/SKILL.md` — keep that skill and this file in sync rather than duplicating details here.
 
+## Commands
+
+- `./gradlew assembleDebug` — build; `./gradlew test` — all JVM unit tests (no instrumented tests of note).
+- Single test: `./gradlew :app:testDebugUnitTest --tests "com.raikar.moviegallery.ui.screens.home.HomeViewModelTest"` (append `.methodName` for one method).
+
+## Build prerequisites
+
+- `app/google-services.json` must exist — the google-services plugin is applied unconditionally, so the build fails without it.
+- TMDB v4 token comes from the `TMDB_READ_ACCESS_TOKEN` env var, else `tmdb.readAccessToken` in `local.properties` (git-ignored; do not read or edit it — denied in `.claude/settings.json`). It is injected as a `BuildConfig` field via the variant API (not `buildConfigField`, removed in AGP 10). Without it the build still works but TMDB calls return 401.
+- AI chat additionally needs Firebase AI Logic + an App Check debug token; other features don't.
+
+## Two backends
+
+`NetworkModule` provides two separate Retrofit stacks selected by qualifier: `@TmdbClient` (`TmdbApi`, movies, bearer-token auth) and `@BffClient` (`BffApi`, TV shows, a separate demo host with its own OkHttp client). New endpoints must pick the right qualifier; Retrofit base URLs need a trailing slash.
+
 ## Repo map
 
 All source lives under `app/src/main/java/com/raikar/moviegallery/`:
