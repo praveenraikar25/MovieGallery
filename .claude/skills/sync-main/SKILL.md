@@ -9,11 +9,11 @@ Switch to `main` and fast-forward it to `origin/main`. Run the steps in order.
 
 ## 1. Check for uncommitted changes
 
-Run `git status --porcelain`.
+Run `git branch --show-current` and remember the result, then run `git status --porcelain`.
 
 If there is **any** output (staged, unstaged, or untracked files), do **not** switch branches and do **not** run any further git commands. Show the user the changed files and the current branch, then ask (AskUserQuestion) which action to take:
 
-- **Commit** — commit them on the current branch first (follow the `git-workflow` skill), then continue.
+- **Commit** — follow the `git-workflow` skill. If it creates a feature branch (because you were on `main`), stop after the commit, report the new branch, and tell the user to rerun `sync-main` when ready. Otherwise continue.
 - **Stash** — `git stash push -u -m "<branch>: before sync-main"`, then continue. Remind the user to `git stash pop` when they return to that branch.
 - **Discard** — only after a second, explicit confirmation, since it is irreversible.
 - **Cancel** — stay on the current branch and change nothing.
