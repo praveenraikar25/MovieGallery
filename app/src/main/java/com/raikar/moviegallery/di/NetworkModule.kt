@@ -102,14 +102,25 @@ object NetworkModule {
     @Singleton
     fun provideTmdbApi(retrofit: Retrofit): TmdbApi = retrofit.create(TmdbApi::class.java)
 
-    /** Derived from the shared base client; the BFF demo host takes no auth header. */
+    /**
+     * Derived from the shared base client; the BFF demo host takes no auth header,
+     * only the app version code in `X-APP-VERSION`.
+     */
     @Provides
     @Singleton
     @BffClient
     fun provideBffOkHttpClient(base: OkHttpClient): OkHttpClient =
         base
             .newBuilder()
-            .addInterceptor(
+            .addInterceptor { chain ->
+                chain.proceed(
+                    chain
+                        .request()
+                        .newBuilder()
+                        .header("X-APP-VERSION", BuildConfig.VERSION_CODE.toString())
+                        .build(),
+                )
+            }.addInterceptor(
                 HttpLoggingInterceptor().apply {
                     level =
                         if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
