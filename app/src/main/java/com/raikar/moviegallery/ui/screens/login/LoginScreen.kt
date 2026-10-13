@@ -1,13 +1,18 @@
 package com.raikar.moviegallery.ui.screens.login
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -15,8 +20,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -27,6 +34,7 @@ import com.raikar.moviegallery.ui.components.AppButton
 import com.raikar.moviegallery.ui.components.AppInput
 import com.raikar.moviegallery.ui.components.ButtonVariant
 import com.raikar.moviegallery.ui.theme.movieColors
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
@@ -34,6 +42,9 @@ fun LoginScreen(
     viewModel: LoginViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val isCreatingAccount = uiState.mode == LoginMode.CreateAccount
 
     LaunchedEffect(uiState.isAuthenticated) {
         if (uiState.isAuthenticated) {
@@ -46,6 +57,7 @@ fun LoginScreen(
             Modifier
                 .fillMaxSize()
                 .imePadding()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 28.dp),
         verticalArrangement = Arrangement.Center,
     ) {
@@ -85,7 +97,28 @@ fun LoginScreen(
             )
         }
         Spacer(modifier = Modifier.height(20.dp))
-        AppButton(text = "Log In", onClick = viewModel::onLoginClick, variant = ButtonVariant.Primary)
+        AppButton(
+            text = if (isCreatingAccount) "Create Account" else "Log In",
+            onClick = viewModel::onSubmit,
+            variant = ButtonVariant.Primary,
+            enabled = !uiState.isLoading,
+        )
+        AppButton(
+            text =
+                if (isCreatingAccount) {
+                    "Already have an account? Log in"
+                } else {
+                    "Don't have an account? Create account"
+                },
+            onClick = viewModel::onToggleMode,
+            variant = ButtonVariant.Ghost,
+            enabled = !uiState.isLoading,
+        )
+        if (uiState.isLoading) {
+            Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        }
 
         Spacer(modifier = Modifier.height(20.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -102,8 +135,17 @@ fun LoginScreen(
 
         AppButton(
             text = "Continue with Google",
-            onClick = onAuthenticated,
+            onClick = {
+                scope.launch {
+                    when (val outcome = requestGoogleIdToken(context)) {
+                        is GoogleSignInOutcome.Token -> viewModel.onGoogleToken(outcome.idToken)
+                        GoogleSignInOutcome.Cancelled -> viewModel.onGoogleCancelled()
+                        GoogleSignInOutcome.Failed -> viewModel.onGoogleFailed()
+                    }
+                }
+            },
             variant = ButtonVariant.Secondary,
+            enabled = !uiState.isLoading,
             leadingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.ic_google_g),

@@ -65,30 +65,39 @@ fun AppButton(
         }
     }
 
+    // The disabled look is applied by fading the background colour and wrapping only the
+    // content in an alpha layer. Putting `alpha` on this Row itself added and removed a
+    // graphics layer under the background every time `enabled` flipped, which left the
+    // button without its background after a request finished.
+    val disabledFade = if (enabled) 1f else 0.5f
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
                 .height(Sizes.ControlHeight)
                 .clip(shape)
-                .background(background)
+                .background(background.copy(alpha = background.alpha * disabledFade))
                 .then(if (border != null) Modifier.border(border, shape) else Modifier)
-                .clickable(enabled = enabled, onClick = onClick)
-                .alpha(if (enabled) 1f else 0.5f),
+                .clickable(enabled = enabled, onClick = onClick),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        CompositionLocalProvider(LocalContentColor provides contentColor) {
-            if (leadingIcon != null) {
-                leadingIcon()
-                Spacer(modifier = Modifier.width(10.dp))
+        Row(
+            modifier = Modifier.alpha(disabledFade),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CompositionLocalProvider(LocalContentColor provides contentColor) {
+                if (leadingIcon != null) {
+                    leadingIcon()
+                    Spacer(modifier = Modifier.width(10.dp))
+                }
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = contentColor,
+                )
             }
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = contentColor,
-            )
         }
     }
 }
