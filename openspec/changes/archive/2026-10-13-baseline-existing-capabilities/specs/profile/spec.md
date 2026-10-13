@@ -2,12 +2,12 @@
 
 ## Purpose
 
-The Profile tab shows who is signed in and acts as the hub for secondary features, settings entries and signing out.
+The Profile tab shows a user identity (currently placeholder values) and acts as the hub for secondary features, settings entries and signing out.
 
 ## ADDED Requirements
 
-### Requirement: Profile shows the signed-in user
-The Profile tab SHALL show the heading "Profile", an initial avatar, the user's display name and email address.
+### Requirement: Profile shows a placeholder user identity
+The Profile tab SHALL show the heading "Profile", an initial avatar, and a fixed placeholder display name and email address that are not derived from the signed-in account.
 
 > Note: Placeholder behavior. The name "Alex Rivera" and email "alex.rivera@email.com" are hardcoded and do not reflect the credentials used to sign in. The Home header's avatar initial "A" is likewise hardcoded.
 

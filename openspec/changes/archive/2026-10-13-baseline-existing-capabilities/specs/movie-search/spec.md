@@ -24,12 +24,18 @@ The app SHALL wait until the query has been unchanged for 500 ms before requesti
 - **WHEN** the user types "dune" quickly and then stops
 - **THEN** a single search for "dune" is issued about 500 ms after the last keystroke
 
-### Requirement: Only the latest query's results are shown
-When the query changes while a search is in flight, the in-flight search SHALL be abandoned and only results for the latest query SHALL be displayed. Re-entering the same query SHALL NOT issue a new request.
+### Requirement: A newer settled query supersedes an in-flight search
+When a new query settles (after the 500 ms pause) while a search is in flight, the in-flight search SHALL be abandoned so its results are never shown. Any edit that settles SHALL issue a new search, even when the settled text equals the previously searched query.
+
+> Note: Cancellation waits for the debounce, so a search still in flight can complete and show its results during the 500 ms after the user edits the query.
 
 #### Scenario: Query changes mid-request
-- **WHEN** a search for "star" is in flight and the user changes the query to "star wars"
-- **THEN** only results for "star wars" are shown
+- **WHEN** a search for "star" is in flight and the query "star wars" settles before it completes
+- **THEN** the "star" search is abandoned and only results for "star wars" are shown
+
+#### Scenario: Edit back to the same text
+- **WHEN** results for "dune" are shown and the user edits it to "dunes" and back to "dune" within 500 ms
+- **THEN** "dune" is searched again
 
 ### Requirement: Header reflects search progress
 The header above the results SHALL read "Searching…" while a request is pending, "N results" (the number of movies returned) once a non-blank query completes, and be blank when an error is shown.

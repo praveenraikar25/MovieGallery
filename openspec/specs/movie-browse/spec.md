@@ -27,11 +27,15 @@ A rail whose request fails or returns no movies SHALL be omitted, and the remain
 - **THEN** Home shows Trending Now, Top Rated and Coming Soon with no error state
 
 ### Requirement: Home shows an error only when every rail is unavailable
-When no rail has any movies, the Home screen SHALL show a full-screen error describing the first failure encountered, with a Retry action that reloads all rails.
+When no rail has any movies, the Home screen SHALL show a full-screen error describing the first failure encountered (or a generic error when every request succeeded but returned no movies), with a Retry action that reloads all rails.
 
 #### Scenario: Offline
 - **WHEN** all four requests fail with no connectivity
 - **THEN** Home shows "No connection" with a Retry button
+
+#### Scenario: All rails empty
+- **WHEN** all four requests succeed but every list is empty
+- **THEN** Home shows "Something went wrong" with a Retry button
 
 #### Scenario: Retry
 - **WHEN** the user taps Retry on the Home error

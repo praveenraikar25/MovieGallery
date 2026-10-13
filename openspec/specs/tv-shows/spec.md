@@ -13,10 +13,10 @@ The Top TV Shows screen SHALL be titled "Top TV Shows" with the subtitle "The hi
 - **THEN** a loading indicator is shown, then the first page of ranked shows
 
 ### Requirement: More pages load as the user scrolls
-The screen SHALL request the next page when the user scrolls to within six items of the end of the loaded list, SHALL show a loading indicator at the end of the grid while it loads, and SHALL NOT issue a second request while one is in flight.
+The screen SHALL request the next page when four or fewer loaded shows remain below the last visible one, SHALL show a loading indicator at the end of the grid while it loads, and SHALL NOT issue a second request while one is in flight.
 
 #### Scenario: Scrolling near the end
-- **WHEN** the user scrolls so fewer than six loaded shows remain below the viewport
+- **WHEN** the user scrolls so four or fewer loaded shows remain below the viewport
 - **THEN** the next page is requested once and appended when it arrives
 
 ### Requirement: Loading stops after the last page
