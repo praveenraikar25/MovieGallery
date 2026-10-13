@@ -1,0 +1,50 @@
+schema: spec-driven
+
+# Project context. CLAUDE.md at the repo root is the authoritative source for the
+# tech stack, repo layout, build prerequisites and commands — read it rather than
+# restating it here. Only constraints that guide OpenSpec artifacts live below.
+context: |
+  MovieGallery is a single-module Android app (package com.raikar.moviegallery).
+  Read CLAUDE.md before writing any artifact; its tech-stack, layering and
+  "Adding a feature screen" / "Adding a TMDB endpoint" checklists are binding.
+  Data comes from three separate backends: TMDB (movies), a BFF demo host
+  (TV shows) and Firebase AI Logic (AI chat). Every change must say which it touches.
+  Baseline specs describe current behavior as-is; known placeholders and gaps are
+  marked with "> Note:" lines inside the requirement they qualify.
+  The app is a learning project today but is intended to ship to production.
+  "> Note:" gaps are accepted for now, not permanent: new work must not add
+  placeholder shortcuts (hardcoded credentials or user data, in-memory-only
+  persistence, developer-facing error copy) without flagging them as a "> Note:"
+  and listing them in the proposal as known pre-production debt.
+
+rules:
+  proposal:
+    - State which backend(s) the change touches (TMDB, BFF, Firebase AI) or "none".
+    - Include an explicit "Out of scope" list.
+    - If the change resolves a "> Note:" gap in an existing spec, name the capability and requirement.
+    - List any new placeholder behavior the change introduces under a "Pre-production debt" heading, or state "none".
+    - Prefer modifying an existing capability (authentication, app-navigation, movie-browse, movie-search, movie-detail, watchlist, tv-shows, ai-chat, profile) over introducing a near-duplicate.
+  specs:
+    - Describe user-observable behavior only; no Kotlin class, function, module or library names.
+    - Quote user-visible strings exactly as they appear on screen.
+    - Cover loading, empty and error states for any screen that loads data, including retry behavior.
+    - Mark accepted placeholder behavior or known gaps with a "> Note:" line; when a change resolves one, the MODIFIED requirement drops that note.
+  design:
+    - Follow the layering in CLAUDE.md and .claude/skills/android-architecture/SKILL.md (UI -> domain use case -> repository interface -> data impl); the domain layer stays free of android.* imports.
+    - For any network call, name the Retrofit stack (@TmdbClient or @BffClient) and how failures map to DataResult/AppError (safeApiCall, or safeAiCall for Firebase AI).
+    - New or upgraded dependencies use their latest stable release and are declared in gradle/libs.versions.toml only.
+    - UI is Jetpack Compose with Material 3; no XML layouts or View-based screens.
+  tasks:
+    - Order tasks along the matching CLAUDE.md checklist ("Adding a feature screen" or "Adding a TMDB endpoint").
+    - Every spec scenario maps to at least one JVM unit test (ViewModel tests use fakes from app/src/test/.../testutil; API/mapper tests use Fixtures.kt and the fake APIs). No instrumented tests.
+    - End with verification tasks that run ./gradlew ktlintCheck, ./gradlew test and ./gradlew assembleDebug.
+
+operations:
+  apply:
+    guidance:
+      - Never read or edit local.properties; the TMDB token comes from TMDB_READ_ACCESS_TOKEN or local.properties and a 401 just means it is missing.
+      - Run ./gradlew ktlintFormat before finishing; the 120-column ktlint_official style is enforced.
+      - Keep CLAUDE.md and the android-architecture skill in sync if a change alters conventions they document.
+  archive:
+    guidance:
+      - Confirm ./gradlew test passes before archiving a change that touched code.
