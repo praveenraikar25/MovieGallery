@@ -20,7 +20,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -45,6 +48,11 @@ fun LoginScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isCreatingAccount = uiState.mode == LoginMode.CreateAccount
+
+    // isLoading only flips once a token comes back, so the chooser being open needs its own
+    // flag to stop a second tap from launching another Credential Manager request.
+    var isGoogleChooserOpen by remember { mutableStateOf(false) }
+    val isBusy = uiState.isLoading || isGoogleChooserOpen
 
     LaunchedEffect(uiState.isAuthenticated) {
         if (uiState.isAuthenticated) {
@@ -101,7 +109,7 @@ fun LoginScreen(
             text = if (isCreatingAccount) "Create Account" else "Log In",
             onClick = viewModel::onSubmit,
             variant = ButtonVariant.Primary,
-            enabled = !uiState.isLoading,
+            enabled = !isBusy,
         )
         AppButton(
             text =
@@ -112,7 +120,7 @@ fun LoginScreen(
                 },
             onClick = viewModel::onToggleMode,
             variant = ButtonVariant.Ghost,
-            enabled = !uiState.isLoading,
+            enabled = !isBusy,
         )
         if (uiState.isLoading) {
             Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), contentAlignment = Alignment.Center) {
@@ -136,16 +144,23 @@ fun LoginScreen(
         AppButton(
             text = "Continue with Google",
             onClick = {
-                scope.launch {
-                    when (val outcome = requestGoogleIdToken(context)) {
-                        is GoogleSignInOutcome.Token -> viewModel.onGoogleToken(outcome.idToken)
-                        GoogleSignInOutcome.Cancelled -> viewModel.onGoogleCancelled()
-                        GoogleSignInOutcome.Failed -> viewModel.onGoogleFailed()
+                if (!isBusy) {
+                    isGoogleChooserOpen = true
+                    scope.launch {
+                        try {
+                            when (val outcome = requestGoogleIdToken(context)) {
+                                is GoogleSignInOutcome.Token -> viewModel.onGoogleToken(outcome.idToken)
+                                GoogleSignInOutcome.Cancelled -> viewModel.onGoogleCancelled()
+                                GoogleSignInOutcome.Failed -> viewModel.onGoogleFailed()
+                            }
+                        } finally {
+                            isGoogleChooserOpen = false
+                        }
                     }
                 }
             },
             variant = ButtonVariant.Secondary,
-            enabled = !uiState.isLoading,
+            enabled = !isBusy,
             leadingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.ic_google_g),
