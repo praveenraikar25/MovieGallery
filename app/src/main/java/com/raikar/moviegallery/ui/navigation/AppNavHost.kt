@@ -1,6 +1,7 @@
 package com.raikar.moviegallery.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -12,10 +13,10 @@ import com.raikar.moviegallery.ui.screens.login.LoginScreen
 import com.raikar.moviegallery.ui.screens.tvshows.TopTvShowsScreen
 
 @Composable
-fun AppNavHost() {
+fun AppNavHost(sessionViewModel: AppSessionViewModel = hiltViewModel()) {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = Routes.LOGIN) {
+    NavHost(navController = navController, startDestination = sessionViewModel.startRoute) {
         composable(Routes.LOGIN) {
             LoginScreen(
                 onAuthenticated = {
@@ -29,6 +30,7 @@ fun AppNavHost() {
             MainScaffold(
                 onMovieClick = { movieId -> navController.navigate(Routes.detail(movieId)) },
                 onSignOut = {
+                    sessionViewModel.signOut()
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(0) { inclusive = true }
                     }

@@ -72,6 +72,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+    testOptions {
+        // Firebase exception constructors call android.text.TextUtils, which the JVM
+        // android.jar stub throws on; default values let auth-error mapping tests build them.
+        unitTests.isReturnDefaultValues = true
+    }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -115,6 +120,7 @@ dependencies {
     ksp(libs.hilt.android.compiler)
 
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.play.services)
 
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.kotlinx.serialization)
@@ -131,6 +137,12 @@ dependencies {
     // which is why the provider artifacts are split per build type.
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.ai)
+    // Firebase Authentication backs email/password and Google sign-in; Credential Manager
+    // fetches the Google ID token that is exchanged for a Firebase credential.
+    implementation(libs.firebase.auth)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
     debugImplementation(libs.firebase.appcheck.debug)
     releaseImplementation(libs.firebase.appcheck.playintegrity)
 

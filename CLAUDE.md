@@ -31,23 +31,24 @@ For layering and module structure (Clean Architecture: UI / Domain / Data, multi
 - `app/google-services.json` must exist — the google-services plugin is applied unconditionally, so the build fails without it.
 - TMDB v4 token comes from the `TMDB_READ_ACCESS_TOKEN` env var, else `tmdb.readAccessToken` in `local.properties` (git-ignored; do not read or edit it — denied in `.claude/settings.json`). It is injected as a `BuildConfig` field via the variant API (not `buildConfigField`, removed in AGP 10). Without it the build still works but TMDB calls return 401.
 - AI chat additionally needs Firebase AI Logic + an App Check debug token; other features don't.
+- Sign-in needs the Email/Password and Google providers enabled in the Firebase console, your debug SHA-1 registered, and `app/google-services.json` re-downloaded so it carries an OAuth web client (the google-services plugin turns it into `default_web_client_id`).
 
-## Two backends
+## Backends
 
-`NetworkModule` provides two separate Retrofit stacks selected by qualifier: `@TmdbClient` (`TmdbApi`, movies, bearer-token auth) and `@BffClient` (`BffApi`, TV shows, a separate demo host with its own OkHttp client). New endpoints must pick the right qualifier; Retrofit base URLs need a trailing slash.
+`NetworkModule` provides two separate Retrofit stacks selected by qualifier: `@TmdbClient` (`TmdbApi`, movies, bearer-token auth) and `@BffClient` (`BffApi`, TV shows, a separate demo host with its own OkHttp client). New endpoints must pick the right qualifier; Retrofit base URLs need a trailing slash. Authentication is a third, non-Retrofit backend: Firebase Auth, reached through `AuthRepository` and mapped to `AuthError` by `safeAuthCall` (`data/remote/auth/`). The Google ID token comes from Credential Manager in the UI layer (`ui/screens/login/GoogleSignIn.kt`) because it needs an Activity; only the token string crosses into the repository.
 
 ## Repo map
 
 All source lives under `app/src/main/java/com/raikar/moviegallery/`:
 
 - `ui/screens/<feature>/` — one package per screen: `<Feature>Screen.kt` (Compose UI), `<Feature>ViewModel.kt` (`@HiltViewModel`, exposes `StateFlow`), `<Feature>UiState.kt`. Existing features: `home`, `search`, `detail`, `watchlist`, `profile`, `login`, `chat`, `tvshows`.
-- `ui/navigation/` — `Destinations.kt` / `Routes` (route constants), `AppNavHost.kt` (`NavHost` graph), `MainScaffold.kt` (bottom nav / tab scaffold for top-level tabs).
+- `ui/navigation/` — `Destinations.kt` / `Routes` (route constants), `AppNavHost.kt` (`NavHost` graph), `AppSessionViewModel.kt` (start route from the persisted session, sign-out), `MainScaffold.kt` (bottom nav / tab scaffold for top-level tabs).
 - `ui/components/` — shared Compose widgets (cards, chips, buttons, state views) reused across screens.
 - `ui/theme/` — Material 3 theme, color, type, shape, dimens.
 - `domain/model/` — plain data classes shared across layers.
 - `domain/repository/` — repository interfaces (`<Thing>Repository`), implemented in `data/repository/`.
 - `domain/usecase/` — one class per use case, invoked from a ViewModel; wraps a repository call.
-- `data/remote/` — `TmdbApi.kt` (Retrofit service), `dto/` (network DTOs), `MovieMappers.kt` (DTO → domain mapping), `SafeApiCall.kt` (network error wrapping), `ai/` (Firebase AI client).
+- `data/remote/` — `auth/` (`safeAuthCall`, Firebase Auth error mapping), `TmdbApi.kt` (Retrofit service), `dto/` (network DTOs), `MovieMappers.kt` (DTO → domain mapping), `SafeApiCall.kt` (network error wrapping), `ai/` (Firebase AI client).
 - `data/repository/` — repository implementations (`<Thing>RepositoryImpl.kt`), or a static/in-memory impl where there's no backing API yet (e.g. `StaticTvShowRepository.kt`).
 - `data/local/` — in-memory/local data sources (e.g. watchlist).
 - `di/` — Hilt modules: `NetworkModule` (Retrofit/OkHttp), `RepositoryModule` (`@Binds` interface → impl), `DispatchersModule`, `AiModule`. `di/qualifier/` holds `@Qualifier` annotations.

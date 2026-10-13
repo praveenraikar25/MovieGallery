@@ -6,11 +6,16 @@ Defines how the user moves through the app: the entry point, the bottom tab bar 
 ## Requirements
 
 ### Requirement: App starts at login
-The app SHALL open on the login screen, and the main tabbed screen SHALL be reachable only after a successful sign-in.
+The app SHALL open on the login screen when no user is signed in and on the main tabbed screen when a user is already signed in. The main tabbed screen SHALL be reachable only while signed in.
 
 #### Scenario: Cold start
-- **WHEN** the app is launched
+- **WHEN** the app is launched and no user is signed in
 - **THEN** the login screen is shown
+
+#### Scenario: Cold start while signed in
+- **WHEN** the app is launched and a user is already signed in
+- **THEN** the main tabbed screen is shown on the Home tab
+- **AND** the login screen is not shown
 
 ### Requirement: Main screen has four bottom tabs
 The main screen SHALL show a bottom tab bar with, in order, Home, Search, Watchlist and Profile, and SHALL open on the Home tab after sign-in. The tab for the visible section SHALL be shown as selected.
