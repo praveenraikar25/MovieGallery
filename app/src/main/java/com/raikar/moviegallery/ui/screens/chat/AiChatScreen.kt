@@ -642,6 +642,7 @@ private val AppError.chatMessage: String
             AppError.Unauthorized ->
                 "Firebase rejected the request. Check that AI Logic is enabled and this device's " +
                     "App Check debug token is registered."
+            AppError.AuthRequired -> "Sign in again to chat with the assistant."
             AppError.Serialization -> "The assistant sent a reply this app couldn't read."
             AppError.NotFound -> "The assistant is unavailable right now."
             is AppError.Http -> "The assistant is unavailable right now (HTTP $code)."

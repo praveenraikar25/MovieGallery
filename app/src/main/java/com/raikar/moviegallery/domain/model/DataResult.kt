@@ -21,6 +21,9 @@ sealed interface AppError {
     /** HTTP 401. Almost always a missing or malformed TMDB token. */
     data object Unauthorized : AppError
 
+    /** The signed-in user could not be authorized with the BFF: no token, or the token was rejected. */
+    data object AuthRequired : AppError
+
     /** HTTP 404 — TMDB does not know this movie id. */
     data object NotFound : AppError
 

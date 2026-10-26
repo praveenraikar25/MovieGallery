@@ -18,6 +18,7 @@ okhttp = "5.5.0"
 kotlinxSerialization = "1.11.0"
 coil = "3.5.0"
 turbine = "1.2.1"
+mockk = "1.14.11"
 ktlint = "14.2.0"
 googleServices = "4.5.0"
 firebaseBom = "34.18.0"
@@ -71,6 +72,7 @@ coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref 
 coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
 
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 
 # The BOM pins firebase-ai and the App Check providers together; declare them without versions.
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }

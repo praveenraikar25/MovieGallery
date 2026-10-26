@@ -1,5 +1,6 @@
 package com.raikar.moviegallery.data.remote
 
+import com.raikar.moviegallery.data.remote.auth.MissingAuthTokenException
 import com.raikar.moviegallery.domain.model.AppError
 import com.raikar.moviegallery.domain.model.DataResult
 import kotlinx.serialization.SerializationException
@@ -30,6 +31,8 @@ internal inline fun <T> safeApiCall(block: () -> T): DataResult<T> =
                 else -> AppError.Http(e.code())
             },
         )
+    } catch (e: MissingAuthTokenException) {
+        DataResult.Failure(AppError.AuthRequired)
     } catch (e: IOException) {
         DataResult.Failure(AppError.Network)
     } catch (e: SerializationException) {

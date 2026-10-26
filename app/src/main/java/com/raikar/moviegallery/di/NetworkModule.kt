@@ -7,8 +7,11 @@ import coil3.request.crossfade
 import com.raikar.moviegallery.BuildConfig
 import com.raikar.moviegallery.data.remote.BffApi
 import com.raikar.moviegallery.data.remote.TmdbApi
+import com.raikar.moviegallery.data.remote.auth.BffAuthInterceptor
+import com.raikar.moviegallery.data.remote.auth.BffTokenAuthenticator
 import com.raikar.moviegallery.di.qualifier.BffClient
 import com.raikar.moviegallery.di.qualifier.TmdbClient
+import com.raikar.moviegallery.domain.repository.AuthTokenProvider
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -103,13 +106,17 @@ object NetworkModule {
     fun provideTmdbApi(retrofit: Retrofit): TmdbApi = retrofit.create(TmdbApi::class.java)
 
     /**
-     * Derived from the shared base client; the BFF demo host takes no auth header,
-     * only the app version code in `X-APP-VERSION`.
+     * Derived from the shared base client. The BFF verifies the signed-in user's Firebase ID
+     * token (`Authorization: Bearer`) and rejects requests without it, so the token is added
+     * here, with one forced-refresh retry on a 401. The app version code goes in `X-APP-VERSION`.
      */
     @Provides
     @Singleton
     @BffClient
-    fun provideBffOkHttpClient(base: OkHttpClient): OkHttpClient =
+    fun provideBffOkHttpClient(
+        base: OkHttpClient,
+        tokenProvider: AuthTokenProvider,
+    ): OkHttpClient =
         base
             .newBuilder()
             .addInterceptor { chain ->
@@ -120,10 +127,14 @@ object NetworkModule {
                         .header("X-APP-VERSION", BuildConfig.VERSION_CODE.toString())
                         .build(),
                 )
-            }.addInterceptor(
+            }.addInterceptor(BffAuthInterceptor(tokenProvider))
+            .authenticator(BffTokenAuthenticator(tokenProvider))
+            .addInterceptor(
                 HttpLoggingInterceptor().apply {
                     level =
                         if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
+                    // Never print the user's ID token, even at BODY level.
+                    redactHeader("Authorization")
                 },
             ).build()
 

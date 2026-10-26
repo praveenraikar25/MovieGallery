@@ -88,6 +88,7 @@ private val AppError.title: String
         when (this) {
             AppError.Network -> "No connection"
             AppError.Unauthorized -> "TMDB rejected the request"
+            AppError.AuthRequired -> "Sign-in required"
             AppError.NotFound -> "Not found"
             AppError.Serialization -> "Unexpected response"
             is AppError.Http -> "Something went wrong"
@@ -102,6 +103,7 @@ private val AppError.detail: String
             // rather than making someone decode a 401.
             AppError.Unauthorized ->
                 "Your TMDB token is missing or invalid — check tmdb.readAccessToken in local.properties."
+            AppError.AuthRequired -> "Your session couldn't be verified. Sign out and sign back in, then try again."
             AppError.NotFound -> "TMDB doesn't have a record for this title."
             AppError.Serialization -> "TMDB returned data this app couldn't read."
             is AppError.Http -> "TMDB responded with an error (HTTP $code)."
