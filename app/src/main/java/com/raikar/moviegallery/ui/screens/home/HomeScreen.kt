@@ -32,6 +32,7 @@ import com.raikar.moviegallery.ui.theme.Sizes
 @Composable
 fun HomeScreen(
     onMovieClick: (Int) -> Unit,
+    onProfileClick: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -53,7 +54,12 @@ fun HomeScreen(
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
-            InitialAvatar(text = avatarInitial, size = Sizes.AvatarSm)
+            InitialAvatar(
+                text = avatarInitial,
+                size = Sizes.AvatarSm,
+                onClick = onProfileClick,
+                onClickLabel = "Open profile",
+            )
         }
 
         val error = uiState.error
