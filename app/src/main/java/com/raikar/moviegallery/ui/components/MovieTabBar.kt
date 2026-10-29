@@ -42,6 +42,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.raikar.moviegallery.ui.theme.MicroTextStyle
 import com.raikar.moviegallery.ui.theme.Sizes
 import com.raikar.moviegallery.ui.theme.movieColors
@@ -57,6 +58,7 @@ enum class TabItem(
 }
 
 private val IconSlotHeight = 34.dp
+private val TAB_LABEL_SIZE = 12.sp
 private const val SELECTED_FILL = 0.22f
 private const val SELECTED_PILL_ALPHA = 0.14f
 
@@ -169,7 +171,7 @@ private fun RowScope.TabBarItem(
         }
         Text(
             text = tab.label,
-            style = MicroTextStyle,
+            style = MicroTextStyle.copy(fontSize = TAB_LABEL_SIZE),
             color = color,
             modifier =
                 Modifier.graphicsLayer {
