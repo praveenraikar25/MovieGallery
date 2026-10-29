@@ -10,6 +10,7 @@ Always use the latest stable Android tech stack. Concretely:
 - **UI**: Jetpack Compose with Material 3 for all UI. Do not add new XML layouts or View-based Activities/Fragments.
 - **DI**: Hilt (`@HiltAndroidApp`, `@AndroidEntryPoint`, `@HiltViewModel`, `@Module`/`@InstallIn`).
 - **Networking/async**: Retrofit for network calls, Kotlin Coroutines/Flow for async data. Repositories expose main-safe suspend functions / `Flow`; ViewModels expose `StateFlow`.
+- **Persistence**: Room 3 (`androidx.room3`, not Room 2's `androidx.room`) for on-device data. DAOs return `Flow` / suspend; schemas are exported to `app/schemas/` and committed, and there is no destructive fallback — a schema change needs a real `Migration`.
 - **Dependencies**: when adding any new library, use its latest stable release and add it via the version catalog.
 
 ## Code style
@@ -23,7 +24,7 @@ For layering and module structure (Clean Architecture: UI / Domain / Data, multi
 
 ## Commands
 
-- `./gradlew assembleDebug` — build; `./gradlew test` — all JVM unit tests (no instrumented tests of note).
+- `./gradlew assembleDebug` — build; `./gradlew test` — all JVM unit tests (no instrumented tests of note). Room DAO/repository tests run under Robolectric against a real database (`testutil/TestDatabases.kt`), with `@Config(application = Application::class)` so the app's Firebase setup isn't started.
 - Single test: `./gradlew :app:testDebugUnitTest --tests "com.raikar.moviegallery.ui.screens.home.HomeViewModelTest"` (append `.methodName` for one method).
 
 ## Build prerequisites
@@ -50,8 +51,8 @@ All source lives under `app/src/main/java/com/raikar/moviegallery/`:
 - `domain/usecase/` — one class per use case, invoked from a ViewModel; wraps a repository call.
 - `data/remote/` — `auth/` (`safeAuthCall`, Firebase Auth error mapping), `TmdbApi.kt` (Retrofit service), `dto/` (network DTOs), `MovieMappers.kt` (DTO → domain mapping), `SafeApiCall.kt` (network error wrapping), `ai/` (Firebase AI client).
 - `data/repository/` — repository implementations (`<Thing>RepositoryImpl.kt`), or a static/in-memory impl where there's no backing API yet (e.g. `StaticTvShowRepository.kt`).
-- `data/local/` — in-memory/local data sources (e.g. watchlist).
-- `di/` — Hilt modules: `NetworkModule` (Retrofit/OkHttp), `RepositoryModule` (`@Binds` interface → impl), `DispatchersModule`, `AiModule`. `di/qualifier/` holds `@Qualifier` annotations.
+- `data/local/` — the Room database (`MovieGalleryDatabase`), its DAOs, entities, column converters and entity ↔ domain mappers. The watchlist lives here, keyed by the signed-in account's Firebase uid.
+- `di/` — Hilt modules: `NetworkModule` (Retrofit/OkHttp), `RepositoryModule` (`@Binds` interface → impl), `DispatchersModule`, `AiModule`, `DatabaseModule` (Room database + DAOs), `ClockModule` (`java.time.Clock`, injected so tests control timestamps). `di/qualifier/` holds `@Qualifier` annotations.
 
 ## Adding a feature screen
 
