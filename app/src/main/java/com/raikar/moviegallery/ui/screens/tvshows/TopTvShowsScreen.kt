@@ -35,8 +35,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.raikar.moviegallery.ui.components.AppButton
 import com.raikar.moviegallery.ui.components.ButtonVariant
 import com.raikar.moviegallery.ui.components.ErrorState
-import com.raikar.moviegallery.ui.components.GridTvShowCard
 import com.raikar.moviegallery.ui.components.LoadingState
+import com.raikar.moviegallery.ui.components.PosterGridCard
+import com.raikar.moviegallery.ui.components.toPosterGridItem
 import com.raikar.moviegallery.ui.theme.Sizes
 import com.raikar.moviegallery.ui.theme.movieColors
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -90,7 +91,7 @@ fun TopTvShowsScreen(
                             .navigationBarsPadding(),
                 ) {
                     items(uiState.shows, key = { it.id }) { show ->
-                        GridTvShowCard(show = show)
+                        PosterGridCard(item = show.toPosterGridItem())
                     }
                     if (uiState.isLoadingMore) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
