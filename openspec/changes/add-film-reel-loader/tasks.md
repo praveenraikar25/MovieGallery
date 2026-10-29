@@ -10,7 +10,7 @@
 - [x] 2.1 Add the reel composable drawn with `Canvas`: ring, six holes, hub, in `MaterialTheme.colorScheme.primary`. Verified by running the app and seeing the reel in light and dark themes (spec: follows the app theme).
 - [x] 2.2 Rotate it continuously and linearly, one turn per 1600 ms. Verified by watching several turns with no slowdown or jump (spec: rotates continuously).
 - [x] 2.3 Render the reel static when the system animator duration scale is 0. Verified by turning animations off in developer options and seeing a still reel, and by a JVM unit test of the rule that maps the scale to "animate or not".
-- [x] 2.4 Announce the reel as "Loading". Verified with TalkBack reading "Loading".
+- [ ] 2.4 Announce the reel as "Loading". The accessibility tree exposes "Loading"; spoken TalkBack output is not confirmed.
 
 ## 3. Wire it in
 
