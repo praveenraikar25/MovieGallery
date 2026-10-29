@@ -35,6 +35,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val avatarInitial by viewModel.avatarInitial.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -52,7 +53,7 @@ fun HomeScreen(
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
-            InitialAvatar(text = "A", size = Sizes.AvatarSm)
+            InitialAvatar(text = avatarInitial, size = Sizes.AvatarSm)
         }
 
         val error = uiState.error

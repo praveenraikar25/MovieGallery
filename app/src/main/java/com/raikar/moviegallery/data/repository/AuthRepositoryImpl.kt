@@ -4,6 +4,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.raikar.moviegallery.data.remote.auth.safeAuthCall
 import com.raikar.moviegallery.domain.model.AuthResult
+import com.raikar.moviegallery.domain.model.CurrentUser
 import com.raikar.moviegallery.domain.repository.AuthRepository
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -27,6 +28,16 @@ class AuthRepositoryImpl
         override val currentUserId: Flow<String?> =
             callbackFlow {
                 val listener = FirebaseAuth.AuthStateListener { auth -> trySend(auth.currentUser?.uid) }
+                firebaseAuth.addAuthStateListener(listener)
+                awaitClose { firebaseAuth.removeAuthStateListener(listener) }
+            }.distinctUntilChanged()
+
+        override val currentUser: Flow<CurrentUser?> =
+            callbackFlow {
+                val listener =
+                    FirebaseAuth.AuthStateListener { auth ->
+                        trySend(auth.currentUser?.let { CurrentUser(email = it.email, displayName = it.displayName) })
+                    }
                 firebaseAuth.addAuthStateListener(listener)
                 awaitClose { firebaseAuth.removeAuthStateListener(listener) }
             }.distinctUntilChanged()
