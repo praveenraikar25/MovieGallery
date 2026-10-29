@@ -27,6 +27,7 @@ object Sizes {
     val BackButton = 36.dp
     val BookmarkBadge = 26.dp
     val EmptyIcon = 48.dp
+    val ReelSpinner = 64.dp
 
     /** Minimum poster tile width for adaptive grids — yields 2 columns on a portrait phone. */
     val GridPosterMinWidth = 150.dp
