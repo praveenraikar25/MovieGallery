@@ -1,5 +1,6 @@
 package com.raikar.moviegallery.data.remote
 
+import com.raikar.moviegallery.data.remote.auth.MissingAuthTokenException
 import com.raikar.moviegallery.domain.model.AppError
 import com.raikar.moviegallery.domain.model.DataResult
 import kotlinx.coroutines.CancellationException
@@ -32,6 +33,11 @@ class SafeApiCallTest {
     @Test
     fun `401 maps to Unauthorized`() {
         assertEquals(AppError.Unauthorized, errorFrom(httpError(401)))
+    }
+
+    @Test
+    fun `a missing auth token maps to AuthRequired rather than Network`() {
+        assertEquals(AppError.AuthRequired, errorFrom(MissingAuthTokenException()))
     }
 
     @Test

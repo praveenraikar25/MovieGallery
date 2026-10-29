@@ -161,6 +161,7 @@ dependencies {
     testImplementation(platform(libs.okhttp.bom))
     testImplementation(libs.okhttp.mockwebserver3.junit4)
     testImplementation(libs.turbine)
+    testImplementation(libs.mockk)
     // Runs the Room DAO and repository tests on the JVM against a real SQLite database.
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)

@@ -195,4 +195,66 @@ class TopTvShowsViewModelTest {
                 cancelAndIgnoreRemainingEvents()
             }
         }
+
+    @Test
+    fun `an authorization failure shows AuthRequired and retry requests the first page again`() =
+        runTest {
+            var attempt = 0
+            val repository =
+                object : com.raikar.moviegallery.domain.repository.TvShowRepository {
+                    override suspend fun topTvShows(page: Int): DataResult<TvShowPage> {
+                        attempt++
+                        return if (attempt == 1) {
+                            DataResult.Failure(AppError.AuthRequired)
+                        } else {
+                            DataResult.Success(TvShowPage(shows = listOf(show(1)), page = 1, totalPages = 1))
+                        }
+                    }
+                }
+
+            val viewModel = TopTvShowsViewModel(GetTopTvShowsUseCase(repository))
+
+            viewModel.uiState.test {
+                val failed = awaitItem()
+                assertFalse(failed.isLoading)
+                assertEquals(AppError.AuthRequired, failed.error)
+                assertTrue(failed.shows.isEmpty())
+
+                viewModel.loadNextPage()
+
+                val retried = awaitItem()
+                assertEquals(listOf(1), retried.shows.map { it.id })
+                assertEquals(null, retried.error)
+
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `an authorization failure on a later page keeps the loaded shows`() =
+        runTest {
+            val repository =
+                FakeTvShowRepository(
+                    pages =
+                        mapOf(
+                            1 to DataResult.Success(TvShowPage(shows = listOf(show(1)), page = 1, totalPages = 3)),
+                            2 to DataResult.Failure(AppError.AuthRequired),
+                        ),
+                )
+
+            val viewModel = TopTvShowsViewModel(GetTopTvShowsUseCase(repository))
+
+            viewModel.uiState.test {
+                awaitItem() // page 1 loaded
+
+                viewModel.loadNextPage()
+
+                var state = awaitItem()
+                while (state.error == null) state = awaitItem()
+                assertEquals(AppError.AuthRequired, state.error)
+                assertEquals(listOf(1), state.shows.map { it.id })
+
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
 }

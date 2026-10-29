@@ -1,5 +1,6 @@
 package com.raikar.moviegallery.data.repository
 
+import com.raikar.moviegallery.data.remote.auth.MissingAuthTokenException
 import com.raikar.moviegallery.domain.model.AppError
 import com.raikar.moviegallery.domain.model.DataResult
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -68,5 +69,27 @@ class TvShowRepositoryImplTest {
             val result = repository().topTvShows(page = 1)
 
             assertEquals(DataResult.Failure(AppError.Network), result)
+        }
+
+    @Test
+    fun `a rejected token surfaces as AuthRequired`() =
+        runTest {
+            api.topTvShowsResponse = {
+                throw HttpException(Response.error<Unit>(401, "".toResponseBody("application/json".toMediaType())))
+            }
+
+            val result = repository().topTvShows(page = 1)
+
+            assertEquals(DataResult.Failure(AppError.AuthRequired), result)
+        }
+
+    @Test
+    fun `a missing token surfaces as AuthRequired`() =
+        runTest {
+            api.topTvShowsResponse = { throw MissingAuthTokenException() }
+
+            val result = repository().topTvShows(page = 1)
+
+            assertEquals(DataResult.Failure(AppError.AuthRequired), result)
         }
 }
