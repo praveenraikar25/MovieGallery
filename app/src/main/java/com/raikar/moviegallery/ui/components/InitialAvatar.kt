@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
@@ -27,6 +29,7 @@ fun InitialAvatar(
     contentColor: Color = MaterialTheme.colorScheme.onPrimary,
     onClick: (() -> Unit)? = null,
     onClickLabel: String? = null,
+    contentDescription: String? = null,
 ) {
     val clickModifier =
         if (onClick != null) {
@@ -34,6 +37,7 @@ fun InitialAvatar(
                 .minimumInteractiveComponentSize()
                 .clip(CircleShape)
                 .clickable(onClickLabel = onClickLabel, role = Role.Button, onClick = onClick)
+                .semantics { contentDescription?.let { this.contentDescription = it } }
         } else {
             Modifier
         }

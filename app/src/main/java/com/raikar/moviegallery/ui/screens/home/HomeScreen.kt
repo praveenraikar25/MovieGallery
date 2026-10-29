@@ -59,6 +59,7 @@ fun HomeScreen(
                 size = Sizes.AvatarSm,
                 onClick = onProfileClick,
                 onClickLabel = "Open profile",
+                contentDescription = "Profile",
             )
         }
 
