@@ -3,10 +3,14 @@ package com.raikar.moviegallery.testutil
 import com.raikar.moviegallery.domain.model.AuthResult
 import com.raikar.moviegallery.domain.repository.AuthRepository
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.MutableStateFlow
 
 class FakeAuthRepository(
     override var isSignedIn: Boolean = false,
 ) : AuthRepository {
+    /** Set directly to simulate an account signing in, switching or signing out. */
+    override val currentUserId = MutableStateFlow<String?>(null)
+
     /** Result returned by the next [signIn], [signUp] or [signInWithGoogle] call. */
     var nextResult: AuthResult<Unit> = AuthResult.Success(Unit)
 
@@ -42,6 +46,7 @@ class FakeAuthRepository(
     override fun signOut() {
         signOutCalls++
         isSignedIn = false
+        currentUserId.value = null
     }
 
     private suspend fun settle(): AuthResult<Unit> {
