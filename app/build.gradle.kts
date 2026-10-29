@@ -11,6 +11,13 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.google.services)
+    alias(libs.plugins.room3)
+}
+
+// Exported schemas are committed so each future migration can be checked against
+// the version it upgrades from.
+room3 {
+    schemaDirectory("$projectDir/schemas")
 }
 
 ktlint {
@@ -119,6 +126,9 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
 
+    implementation(libs.room3.runtime)
+    ksp(libs.room3.compiler)
+
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.play.services)
 
@@ -152,6 +162,9 @@ dependencies {
     testImplementation(libs.okhttp.mockwebserver3.junit4)
     testImplementation(libs.turbine)
     testImplementation(libs.mockk)
+    // Runs the Room DAO and repository tests on the JVM against a real SQLite database.
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

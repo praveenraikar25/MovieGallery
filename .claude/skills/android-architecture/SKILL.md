@@ -25,6 +25,7 @@ Structure the application into three primary layers. Dependencies must strictly 
     *   **Responsibility**: Managing application data (fetching, caching, saving).
     *   **Components**: Repositories (implementations), Data Sources (Retrofit APIs, Room DAOs).
     *   **Dependencies**: Depends only on external sources and libraries.
+    *   **Local persistence**: Room 3 (`androidx.room3`). Persisted data uses Room as the single source of truth — DAOs expose `Flow` for reads and suspend functions for writes, and a check-then-write runs in one `@Transaction`. Export schemas (`app/schemas/`), commit them, and add a `Migration` per version bump instead of a destructive fallback. Per-account data is keyed by the signed-in user's id.
 
 ### 2. Dependency Injection with Hilt
 Use **Hilt** for all dependency injection.

@@ -4,7 +4,6 @@ import com.raikar.moviegallery.domain.model.Movie
 import com.raikar.moviegallery.domain.repository.WatchlistRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -14,7 +13,7 @@ class FakeWatchlistRepository(
     initial: List<Movie> = emptyList(),
 ) : WatchlistRepository {
     private val _watchlist = MutableStateFlow(initial)
-    override val watchlist: StateFlow<List<Movie>> = _watchlist.asStateFlow()
+    override val watchlist: Flow<List<Movie>> = _watchlist.asStateFlow()
 
     val toggleCalls = mutableListOf<Movie>()
 

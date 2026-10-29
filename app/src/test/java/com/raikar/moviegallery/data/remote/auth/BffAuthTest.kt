@@ -34,7 +34,7 @@ class BffAuthTest {
         OkHttpClient
             .Builder()
             .addInterceptor(BffAuthInterceptor(provider))
-            .authenticator(BffTokenAuthenticator(provider))
+            .authenticator(BffTokenAuthenticator(provider, server.hostName))
             .build()
 
     private fun call(provider: AuthTokenProvider) =

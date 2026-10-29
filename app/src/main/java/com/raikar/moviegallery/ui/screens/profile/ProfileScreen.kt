@@ -25,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +34,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.raikar.moviegallery.ui.components.AppIcons
 import com.raikar.moviegallery.ui.components.InitialAvatar
 import com.raikar.moviegallery.ui.theme.Sizes
@@ -43,7 +46,10 @@ fun ProfileScreen(
     onSignOut: () -> Unit,
     onFindMoviesWithAi: () -> Unit,
     onTopTvShows: () -> Unit,
+    viewModel: ProfileViewModel = hiltViewModel(),
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     Column(
         modifier =
             Modifier
@@ -65,15 +71,17 @@ fun ProfileScreen(
             modifier = Modifier.fillMaxWidth().padding(bottom = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            InitialAvatar(text = "A", size = Sizes.AvatarLg)
+            InitialAvatar(text = uiState.initial, size = Sizes.AvatarLg)
             Spacer(modifier = Modifier.height(10.dp))
+            uiState.name?.let { name ->
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
             Text(
-                text = "Alex Rivera",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = "alex.rivera@email.com",
+                text = uiState.email,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.movieColors.textMuted,
             )
