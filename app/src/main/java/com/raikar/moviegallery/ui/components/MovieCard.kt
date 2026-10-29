@@ -147,7 +147,8 @@ fun WatchlistMovieCard(
         )
         Row(
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = movie.subtitleWithYear,
@@ -155,6 +156,7 @@ fun WatchlistMovieCard(
                 color = MaterialTheme.movieColors.textMuted,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
             )
             if (movie.hasRating) {
                 Text(
@@ -162,6 +164,8 @@ fun WatchlistMovieCard(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    softWrap = false,
                 )
             }
         }

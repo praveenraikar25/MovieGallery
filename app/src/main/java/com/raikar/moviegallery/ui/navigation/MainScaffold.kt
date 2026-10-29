@@ -36,25 +36,29 @@ fun MainScaffold(
             else -> TabItem.Home
         }
 
+    val navigateToTab: (String) -> Unit = { route ->
+        tabNavController.navigate(route) {
+            popUpTo(tabNavController.graph.findStartDestination().id) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
     Scaffold(
         bottomBar = {
             MovieTabBar(
                 active = activeTab,
                 onSelect = { tab ->
-                    val route =
+                    navigateToTab(
                         when (tab) {
                             TabItem.Home -> Routes.HOME
                             TabItem.Search -> Routes.SEARCH
                             TabItem.Watchlist -> Routes.WATCHLIST
                             TabItem.Profile -> Routes.PROFILE
-                        }
-                    tabNavController.navigate(route) {
-                        popUpTo(tabNavController.graph.findStartDestination().id) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
+                        },
+                    )
                 },
             )
         },
@@ -65,7 +69,10 @@ fun MainScaffold(
             modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
         ) {
             composable(Routes.HOME) {
-                HomeScreen(onMovieClick = onMovieClick)
+                HomeScreen(
+                    onMovieClick = onMovieClick,
+                    onProfileClick = { navigateToTab(Routes.PROFILE) },
+                )
             }
             composable(Routes.SEARCH) {
                 SearchScreen(onMovieClick = onMovieClick)
