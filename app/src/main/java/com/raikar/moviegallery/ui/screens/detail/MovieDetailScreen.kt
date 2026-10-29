@@ -345,8 +345,8 @@ private fun CollapsingHeader(
     }
 }
 
-/** Height of the pinned strip below the status bar. */
-private val CollapsedBarHeight = 56.dp
+/** Height of the pinned strip below the status bar: the 36dp back button plus its 12dp inset on each side. */
+private val CollapsedBarHeight = 60.dp
 
 /** Extra darkening layered on the backdrop once collapsed, so the white title stays legible on the thin crop. */
 private const val COLLAPSED_SCRIM_ALPHA = 0.35f
