@@ -1,6 +1,7 @@
 package com.raikar.moviegallery.domain.repository
 
 import com.raikar.moviegallery.domain.model.AuthResult
+import com.raikar.moviegallery.domain.model.CurrentUser
 import kotlinx.coroutines.flow.Flow
 
 interface AuthRepository {
@@ -12,6 +13,12 @@ interface AuthRepository {
      * collection and again on every sign-in or sign-out, so per-account data can follow it.
      */
     val currentUserId: Flow<String?>
+
+    /**
+     * The signed-in account's email and display name, or null when signed out. Emits the current
+     * value on collection and again on every sign-in, sign-out or account switch.
+     */
+    val currentUser: Flow<CurrentUser?>
 
     suspend fun signIn(
         email: String,
