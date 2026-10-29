@@ -25,7 +25,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.raikar.moviegallery.ui.components.AppIcons
-import com.raikar.moviegallery.ui.components.WatchlistMovieCard
+import com.raikar.moviegallery.ui.components.PosterGridCard
+import com.raikar.moviegallery.ui.components.WatchlistBookmarkBadge
+import com.raikar.moviegallery.ui.components.toPosterGridItem
 import com.raikar.moviegallery.ui.theme.Sizes
 import com.raikar.moviegallery.ui.theme.movieColors
 
@@ -69,7 +71,11 @@ fun WatchlistScreen(
                 modifier = Modifier.fillMaxSize(),
             ) {
                 items(uiState.movies, key = { it.id }) { movie ->
-                    WatchlistMovieCard(movie = movie, onClick = { onMovieClick(movie.id) })
+                    PosterGridCard(
+                        item = movie.toPosterGridItem(),
+                        onClick = { onMovieClick(movie.id) },
+                        badge = { WatchlistBookmarkBadge() },
+                    )
                 }
             }
         }

@@ -23,7 +23,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.raikar.moviegallery.ui.components.AppInput
 import com.raikar.moviegallery.ui.components.ErrorState
-import com.raikar.moviegallery.ui.components.GridMovieCard
+import com.raikar.moviegallery.ui.components.PosterGridCard
+import com.raikar.moviegallery.ui.components.toPosterGridItem
 import com.raikar.moviegallery.ui.theme.Sizes
 import com.raikar.moviegallery.ui.theme.movieColors
 
@@ -78,7 +79,7 @@ fun SearchScreen(
                 modifier = Modifier.fillMaxSize(),
             ) {
                 items(uiState.results, key = { it.id }) { movie ->
-                    GridMovieCard(movie = movie, onClick = { onMovieClick(movie.id) })
+                    PosterGridCard(item = movie.toPosterGridItem(), onClick = { onMovieClick(movie.id) })
                 }
             }
         }
