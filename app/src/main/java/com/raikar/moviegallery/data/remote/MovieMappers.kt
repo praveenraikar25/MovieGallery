@@ -3,9 +3,11 @@ package com.raikar.moviegallery.data.remote
 import com.raikar.moviegallery.data.remote.dto.CastMemberDto
 import com.raikar.moviegallery.data.remote.dto.MovieDetailDto
 import com.raikar.moviegallery.data.remote.dto.MovieSummaryDto
+import com.raikar.moviegallery.data.remote.dto.ProductionCountryDto
 import com.raikar.moviegallery.domain.model.CastMember
 import com.raikar.moviegallery.domain.model.Movie
 import com.raikar.moviegallery.domain.model.MovieDetail
+import com.raikar.moviegallery.domain.model.ProductionCountry
 
 /** How many cast members the detail screen shows. */
 private const val MAX_CAST = 10
@@ -44,7 +46,15 @@ internal fun MovieDetailDto.toDomain(): MovieDetail =
                 ?.take(MAX_CAST)
                 ?.map { it.toDomain() }
                 .orEmpty(),
+        productionCountries = productionCountries.mapNotNull { it.toDomain() },
     )
+
+/**
+ * Null only for an entry with no name, which the screen could not label. A blank or malformed
+ * code still yields a chip, shown by name without a flag.
+ */
+private fun ProductionCountryDto.toDomain(): ProductionCountry? =
+    if (name.isBlank()) null else ProductionCountry(code = code.trim(), name = name.trim())
 
 private fun CastMemberDto.toDomain(): CastMember =
     CastMember(

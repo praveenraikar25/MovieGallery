@@ -7,8 +7,9 @@ context: |
   MovieGallery is a single-module Android app (package com.raikar.moviegallery).
   Read CLAUDE.md before writing any artifact; its tech-stack, layering and
   "Adding a feature screen" / "Adding a TMDB endpoint" checklists are binding.
-  Data comes from three separate backends: TMDB (movies), a BFF demo host
-  (TV shows) and Firebase AI Logic (AI chat). Every change must say which it touches.
+  Data comes from four separate backends: TMDB (movies), a BFF demo host
+  (TV shows), Firebase AI Logic (AI chat) and the Countries GraphQL API
+  (production-country details). Every change must say which it touches.
   Baseline specs describe current behavior as-is; known placeholders and gaps are
   marked with "> Note:" lines inside the requirement they qualify.
   The app is a learning project today but is intended to ship to production.

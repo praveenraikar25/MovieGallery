@@ -3,6 +3,7 @@ package com.raikar.moviegallery.ui.screens.detail
 import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -62,9 +64,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.raikar.moviegallery.domain.model.Movie
 import com.raikar.moviegallery.domain.model.MovieDetail
+import com.raikar.moviegallery.domain.model.ProductionCountry
 import com.raikar.moviegallery.ui.components.AppButton
 import com.raikar.moviegallery.ui.components.AppIcons
 import com.raikar.moviegallery.ui.components.ButtonVariant
+import com.raikar.moviegallery.ui.components.CountryChip
 import com.raikar.moviegallery.ui.components.ErrorState
 import com.raikar.moviegallery.ui.components.GenreChip
 import com.raikar.moviegallery.ui.components.LoadingState
@@ -98,7 +102,17 @@ fun MovieDetailScreen(
                 // Passing the loaded detail keeps the toggle from being a no-op that
                 // silently does nothing before the request has come back.
                 onToggleWatchlist = { viewModel.onToggleWatchlist(detail) },
+                onCountryClick = viewModel::onCountryClick,
             )
+    }
+
+    val countrySheet = uiState.countrySheet
+    if (detail != null && countrySheet != null) {
+        CountryDetailsSheet(
+            state = countrySheet,
+            onDismiss = viewModel::onCountrySheetDismiss,
+            onRetry = viewModel::retryCountry,
+        )
     }
 }
 
@@ -108,6 +122,7 @@ private fun MovieDetailContent(
     isInWatchlist: Boolean,
     onBack: () -> Unit,
     onToggleWatchlist: () -> Unit,
+    onCountryClick: (ProductionCountry) -> Unit,
 ) {
     val movie = detail.summary
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -207,6 +222,37 @@ private fun MovieDetailContent(
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         movie.genres.forEach { genre -> GenreChip(text = genre) }
+                    }
+
+                    if (detail.productionCountries.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(18.dp))
+                        Text(
+                            text = "Made in",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.movieColors.textMuted,
+                        )
+                        Row(
+                            modifier =
+                                Modifier
+                                    // Bleeds past the column's 20.dp padding so chips scroll edge to edge.
+                                    .layout { measurable, constraints ->
+                                        val bleed = 20.dp.roundToPx()
+                                        val placeable =
+                                            measurable.measure(
+                                                constraints.copy(
+                                                    minWidth = constraints.maxWidth + bleed * 2,
+                                                    maxWidth = constraints.maxWidth + bleed * 2,
+                                                ),
+                                            )
+                                        layout(constraints.maxWidth, placeable.height) { placeable.place(-bleed, 0) }
+                                    }.horizontalScroll(rememberScrollState())
+                                    .padding(horizontal = 20.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            detail.productionCountries.forEach { country ->
+                                CountryChip(country = country, onClick = { onCountryClick(country) })
+                            }
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))

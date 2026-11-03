@@ -37,6 +37,8 @@ data class MovieDetail(
     val runtimeMinutes: Int?,
     val tagline: String?,
     val cast: List<CastMember>,
+    /** In TMDB's order; empty when TMDB lists none. */
+    val productionCountries: List<ProductionCountry> = emptyList(),
 ) {
     /** Joins only the parts TMDB actually gave us, e.g. "2024 · 118 min · Drama". */
     val metadataLabel: String

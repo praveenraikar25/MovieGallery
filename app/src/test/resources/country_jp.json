@@ -1,0 +1,14 @@
+{
+  "data": {
+    "country": {
+      "code": "JP",
+      "name": "Japan",
+      "native": "日本",
+      "emoji": "🇯🇵",
+      "capital": "Tokyo",
+      "currencies": ["JPY"],
+      "continent": { "name": "Asia" },
+      "languages": [{ "name": "Japanese" }]
+    }
+  }
+}

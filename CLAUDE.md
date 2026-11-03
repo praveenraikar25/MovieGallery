@@ -9,7 +9,7 @@ Always use the latest stable Android tech stack. Concretely:
 - **Kotlin & AGP**: target the latest stable Kotlin and Android Gradle Plugin versions. `gradle/libs.versions.toml` is the single source of truth for all dependency/plugin versions — add new versions there, don't hardcode them in module `build.gradle.kts` files.
 - **UI**: Jetpack Compose with Material 3 for all UI. Do not add new XML layouts or View-based Activities/Fragments.
 - **DI**: Hilt (`@HiltAndroidApp`, `@AndroidEntryPoint`, `@HiltViewModel`, `@Module`/`@InstallIn`).
-- **Networking/async**: Retrofit for network calls, Kotlin Coroutines/Flow for async data. Repositories expose main-safe suspend functions / `Flow`; ViewModels expose `StateFlow`.
+- **Networking/async**: Retrofit for REST calls, Apollo Kotlin for GraphQL, Kotlin Coroutines/Flow for async data. Repositories expose main-safe suspend functions / `Flow`; ViewModels expose `StateFlow`.
 - **Persistence**: Room 3 (`androidx.room3`, not Room 2's `androidx.room`) for on-device data. DAOs return `Flow` / suspend; schemas are exported to `app/schemas/` and committed, and there is no destructive fallback — a schema change needs a real `Migration`.
 - **Dependencies**: when adding any new library, use its latest stable release and add it via the version catalog.
 
@@ -38,6 +38,8 @@ For layering and module structure (Clean Architecture: UI / Domain / Data, multi
 
 `NetworkModule` provides two separate Retrofit stacks selected by qualifier: `@TmdbClient` (`TmdbApi`, movies, bearer-token auth) and `@BffClient` (`BffApi`, TV shows, a separate demo host with its own OkHttp client). New endpoints must pick the right qualifier; Retrofit base URLs need a trailing slash. Authentication is a third, non-Retrofit backend: Firebase Auth, reached through `AuthRepository` and mapped to `AuthError` by `safeAuthCall` (`data/remote/auth/`). The Google ID token comes from Credential Manager in the UI layer (`ui/screens/login/GoogleSignIn.kt`) because it needs an Activity; only the token string crosses into the repository.
 
+The fourth backend is GraphQL: the public, unauthenticated Countries API, reached through the single `ApolloClient` in `GraphQlModule` (derived from the shared base `OkHttpClient`; no qualifier while it is the only Apollo client). Its schema and `.graphql` operations live in `app/src/main/graphql/countries/`, and Apollo generates typed models into `data/remote/graphql/countries` at build time — they stay in the data layer. Apollo returns failures on the response instead of throwing, so wrap calls in `safeGraphQlCall`, which maps them to the same `AppError`s as `safeApiCall`. `CountryRepository` backs the production-country details sheet on Movie Detail.
+
 ## Repo map
 
 All source lives under `app/src/main/java/com/raikar/moviegallery/`:
@@ -49,10 +51,10 @@ All source lives under `app/src/main/java/com/raikar/moviegallery/`:
 - `domain/model/` — plain data classes shared across layers.
 - `domain/repository/` — repository interfaces (`<Thing>Repository`), implemented in `data/repository/`.
 - `domain/usecase/` — one class per use case, invoked from a ViewModel; wraps a repository call.
-- `data/remote/` — `auth/` (`safeAuthCall`, Firebase Auth error mapping), `TmdbApi.kt` (Retrofit service), `dto/` (network DTOs), `MovieMappers.kt` (DTO → domain mapping), `SafeApiCall.kt` (network error wrapping), `ai/` (Firebase AI client).
+- `data/remote/` — `auth/` (`safeAuthCall`, Firebase Auth error mapping), `TmdbApi.kt` (Retrofit service), `dto/` (network DTOs), `MovieMappers.kt` (DTO → domain mapping), `SafeApiCall.kt` (network error wrapping), `ai/` (Firebase AI client), `SafeGraphQlCall.kt` + `CountryMappers.kt` (GraphQL error wrapping and Apollo model → domain mapping; generated Apollo code lands in `graphql/countries`).
 - `data/repository/` — repository implementations (`<Thing>RepositoryImpl.kt`), or a static/in-memory impl where there's no backing API yet (e.g. `StaticTvShowRepository.kt`).
 - `data/local/` — the Room database (`MovieGalleryDatabase`), its DAOs, entities, column converters and entity ↔ domain mappers. The watchlist lives here, keyed by the signed-in account's Firebase uid.
-- `di/` — Hilt modules: `NetworkModule` (Retrofit/OkHttp), `RepositoryModule` (`@Binds` interface → impl), `DispatchersModule`, `AiModule`, `DatabaseModule` (Room database + DAOs), `ClockModule` (`java.time.Clock`, injected so tests control timestamps). `di/qualifier/` holds `@Qualifier` annotations.
+- `di/` — Hilt modules: `NetworkModule` (Retrofit/OkHttp), `RepositoryModule` (`@Binds` interface → impl), `DispatchersModule`, `AiModule`, `GraphQlModule` (`ApolloClient`), `DatabaseModule` (Room database + DAOs), `ClockModule` (`java.time.Clock`, injected so tests control timestamps). `di/qualifier/` holds `@Qualifier` annotations.
 
 ## Adding a feature screen
 
@@ -76,3 +78,10 @@ Touch these in order:
 3. `data/remote/MovieMappers.kt` — DTO → domain model mapping function.
 4. `domain/repository/` + `data/repository/...Impl.kt` — expose the call through the repository layer (wrap with `SafeApiCall`).
 5. `app/src/test/java/.../data/remote/` — add a fixture + test (see `Fixtures.kt`, `FakeTmdbApi.kt` for patterns).
+
+## Adding a GraphQL query
+
+1. `app/src/main/graphql/countries/` — add a `.graphql` operation; the build validates it against the committed `schema.graphqls` (refresh with `./gradlew :app:downloadCountriesApolloSchemaFromIntrospection`).
+2. `data/remote/` — map the generated `…Query.Data` to a domain model (see `CountryMappers.kt`).
+3. `domain/repository/` + `data/repository/...Impl.kt` — call `apollo.query(...).execute()` inside `safeGraphQlCall` on the `@IoDispatcher`.
+4. `app/src/test/java/.../data/` — mapper test with generated models, and a repository test running a real `ApolloClient` against `MockWebServerRule` with a JSON fixture (see `CountryRepositoryImplTest.kt`).
