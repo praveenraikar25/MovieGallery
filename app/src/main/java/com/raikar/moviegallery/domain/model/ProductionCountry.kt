@@ -18,9 +18,10 @@ data class ProductionCountry(
 private const val REGIONAL_INDICATOR_A = 0x1F1E6
 
 internal fun flagEmoji(code: String): String? {
-    val letters = code.uppercase()
-    if (letters.length != 2 || letters.any { it !in 'A'..'Z' }) return null
-    return letters
+    // Checked before uppercasing: "ß".uppercase() is "SS", which would pass as South Sudan.
+    if (code.length != 2 || code.any { it !in 'A'..'Z' && it !in 'a'..'z' }) return null
+    return code
+        .uppercase()
         .map { Character.toChars(REGIONAL_INDICATOR_A + (it - 'A')).concatToString() }
         .joinToString("")
 }

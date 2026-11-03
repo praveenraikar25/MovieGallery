@@ -25,4 +25,9 @@ class ProductionCountryTest {
         assertNull(flag("K1"))
         assertNull(flag("K"))
     }
+
+    @Test
+    fun `a letter that uppercases to two letters has no flag`() {
+        assertNull(flag("ß"))
+    }
 }

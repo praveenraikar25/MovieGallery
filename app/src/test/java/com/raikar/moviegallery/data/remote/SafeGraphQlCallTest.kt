@@ -45,10 +45,11 @@ class SafeGraphQlCallTest {
     }
 
     @Test
-    fun `data with partial errors is still a success`() {
-        val result = safeGraphQlCall { response(data = data, errors = listOf(Error.Builder("partial").build())) }
+    fun `data alongside GraphQL errors is a failure`() {
+        // A failed nullable field arrives as null plus an error; it must not read as "no record".
+        val error = errorFrom(response(data = data, errors = listOf(Error.Builder("country failed").build())))
 
-        assertEquals(DataResult.Success(data), result)
+        assertTrue(error is AppError.Unknown)
     }
 
     @Test

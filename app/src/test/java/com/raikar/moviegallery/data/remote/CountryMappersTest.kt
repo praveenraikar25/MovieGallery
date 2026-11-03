@@ -71,6 +71,14 @@ class CountryMappersTest {
     }
 
     @Test
+    fun `the name is trimmed before it is compared with the native name`() {
+        val details = country(name = "Japan ", native = "Japan").toDomain()
+
+        assertEquals("Japan", details.name)
+        assertNull(details.nativeName)
+    }
+
+    @Test
     fun `a missing or blank capital is null`() {
         assertNull(country(capital = null).toDomain().capital)
         assertNull(country(capital = "  ").toDomain().capital)

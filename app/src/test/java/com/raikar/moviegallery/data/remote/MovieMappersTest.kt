@@ -138,12 +138,14 @@ class MovieMappersTest {
     }
 
     @Test
-    fun `production countries keep TMDB order and drop blank entries`() {
+    fun `production countries keep TMDB order and drop only nameless entries`() {
         val countries = detail("movie_detail_countries.json").toDomain().productionCountries
 
         assertEquals(
             listOf(
                 ProductionCountry("GB", "United Kingdom"),
+                // A blank code still shows as a name-only chip.
+                ProductionCountry("", "Nowhere"),
                 ProductionCountry("FR", "France"),
                 ProductionCountry("US", "United States of America"),
             ),

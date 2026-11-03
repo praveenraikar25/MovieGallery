@@ -30,7 +30,9 @@ class CountryRepositoryImpl
         private val cacheLock = Mutex()
 
         override suspend fun getCountryDetails(code: String): DataResult<CountryDetails?> {
-            val key = code.uppercase()
+            val key = code.trim().uppercase()
+            // TMDB can list a country with no code; there is nothing to look up.
+            if (key.isEmpty()) return DataResult.Success(null)
             cacheLock.withLock {
                 if (key in cache) return DataResult.Success(cache[key])
             }

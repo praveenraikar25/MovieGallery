@@ -4,8 +4,9 @@ import com.raikar.moviegallery.data.remote.graphql.countries.CountryDetailsQuery
 import com.raikar.moviegallery.domain.model.CountryDetails
 import com.raikar.moviegallery.domain.model.flagEmoji
 
-internal fun CountryDetailsQuery.Country.toDomain(): CountryDetails =
-    CountryDetails(
+internal fun CountryDetailsQuery.Country.toDomain(): CountryDetails {
+    val name = name.trim()
+    return CountryDetails(
         code = code,
         name = name,
         nativeName = native.trim().takeIf { it.isNotEmpty() && it != name },
@@ -15,3 +16,4 @@ internal fun CountryDetailsQuery.Country.toDomain(): CountryDetails =
         languages = languages.map { it.name.trim() }.filter { it.isNotEmpty() },
         currencies = currencies.map { it.trim() }.filter { it.isNotEmpty() },
     )
+}

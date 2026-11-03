@@ -110,6 +110,26 @@ class CountryRepositoryImplTest {
         }
 
     @Test
+    fun `a blank code is no record and makes no request`() =
+        runTest {
+            assertEquals(DataResult.Success(null), repository().getCountryDetails(" "))
+            assertEquals(0, server.requestCount)
+        }
+
+    @Test
+    fun `a field that failed on the server is a failure and is not cached`() =
+        runTest {
+            val failedField = """{"data":{"country":null},"errors":[{"message":"boom","path":["country"]}]}"""
+            enqueue(failedField)
+            enqueue(fixture("country_jp.json"))
+            val repository = repository()
+
+            assertTrue(repository.getCountryDetails("JP") is DataResult.Failure)
+            assertEquals("Japan", (repository.getCountryDetails("JP") as DataResult.Success).data?.name)
+            assertEquals(2, server.requestCount)
+        }
+
+    @Test
     fun `an unreachable server maps to Network`() =
         runTest {
             // Port 1 refuses connections on any normal machine.

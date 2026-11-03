@@ -17,7 +17,8 @@ private const val HTTP_NOT_FOUND = 404
 /**
  * The GraphQL counterpart of [safeApiCall]. Apollo reports transport failures on the response
  * ([ApolloResponse.exception]) rather than throwing, and GraphQL errors in [ApolloResponse.errors],
- * so both are mapped here. A response with data is a success even when it carries partial errors.
+ * so both are mapped here. Any GraphQL error is a failure, even alongside data: a nullable field
+ * that fails on the server comes back as null plus an error, which must not read as "no record".
  */
 internal inline fun <D : Operation.Data> safeGraphQlCall(block: () -> ApolloResponse<D>): DataResult<D> {
     val response =
@@ -30,11 +31,11 @@ internal inline fun <D : Operation.Data> safeGraphQlCall(block: () -> ApolloResp
         }
     val data = response.data
     val exception = response.exception
+    val errors = response.errors.orEmpty()
     return when {
-        data != null -> DataResult.Success(data)
         exception != null -> DataResult.Failure(exception.toAppError())
-        !response.errors.isNullOrEmpty() ->
-            DataResult.Failure(AppError.Unknown(ApolloGraphQLException(response.errors.orEmpty())))
+        errors.isNotEmpty() -> DataResult.Failure(AppError.Unknown(ApolloGraphQLException(errors)))
+        data != null -> DataResult.Success(data)
         else -> DataResult.Failure(AppError.Serialization)
     }
 }

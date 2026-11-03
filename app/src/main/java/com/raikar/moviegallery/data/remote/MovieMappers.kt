@@ -49,9 +49,12 @@ internal fun MovieDetailDto.toDomain(): MovieDetail =
         productionCountries = productionCountries.mapNotNull { it.toDomain() },
     )
 
-/** Null for an entry missing its code or name, which the screen could not label or look up. */
+/**
+ * Null only for an entry with no name, which the screen could not label. A blank or malformed
+ * code still yields a chip, shown by name without a flag.
+ */
 private fun ProductionCountryDto.toDomain(): ProductionCountry? =
-    if (code.isBlank() || name.isBlank()) null else ProductionCountry(code = code.trim(), name = name.trim())
+    if (name.isBlank()) null else ProductionCountry(code = code.trim(), name = name.trim())
 
 private fun CastMemberDto.toDomain(): CastMember =
     CastMember(
