@@ -2,6 +2,7 @@ package com.raikar.moviegallery.data.remote
 
 import com.raikar.moviegallery.data.remote.dto.MovieDetailDto
 import com.raikar.moviegallery.data.remote.dto.MovieListResponseDto
+import com.raikar.moviegallery.domain.model.ProductionCountry
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -134,5 +135,32 @@ class MovieMappersTest {
         )
         // Nothing to show at all, rather than "null · 0 min".
         assertEquals("", detail("movie_detail_sparse.json").toDomain().metadataLabel)
+    }
+
+    @Test
+    fun `production countries keep TMDB order and drop blank entries`() {
+        val countries = detail("movie_detail_countries.json").toDomain().productionCountries
+
+        assertEquals(
+            listOf(
+                ProductionCountry("GB", "United Kingdom"),
+                ProductionCountry("FR", "France"),
+                ProductionCountry("US", "United States of America"),
+            ),
+            countries,
+        )
+    }
+
+    @Test
+    fun `a single production country maps on its own`() {
+        val countries = detail("movie_detail_single_country.json").toDomain().productionCountries
+
+        assertEquals(listOf(ProductionCountry("KR", "South Korea")), countries)
+        assertEquals("🇰🇷", countries.single().flag)
+    }
+
+    @Test
+    fun `missing production countries map to an empty list`() {
+        assertTrue(detail("movie_detail_sparse.json").toDomain().productionCountries.isEmpty())
     }
 }

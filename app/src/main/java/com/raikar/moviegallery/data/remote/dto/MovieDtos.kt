@@ -47,6 +47,15 @@ data class MovieDetailDto(
     val tagline: String? = null,
     /** Present only because of `append_to_response=credits`. */
     val credits: CreditsDto? = null,
+    /** In TMDB's order; absent or empty for many older and obscure titles. */
+    @SerialName("production_countries") val productionCountries: List<ProductionCountryDto> = emptyList(),
+)
+
+@Serializable
+data class ProductionCountryDto(
+    /** ISO 3166-1 alpha-2, though TMDB keeps retired codes such as `SU` for older films. */
+    @SerialName("iso_3166_1") val code: String = "",
+    val name: String = "",
 )
 
 @Serializable

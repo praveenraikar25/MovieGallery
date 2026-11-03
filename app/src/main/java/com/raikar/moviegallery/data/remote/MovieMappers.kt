@@ -3,9 +3,11 @@ package com.raikar.moviegallery.data.remote
 import com.raikar.moviegallery.data.remote.dto.CastMemberDto
 import com.raikar.moviegallery.data.remote.dto.MovieDetailDto
 import com.raikar.moviegallery.data.remote.dto.MovieSummaryDto
+import com.raikar.moviegallery.data.remote.dto.ProductionCountryDto
 import com.raikar.moviegallery.domain.model.CastMember
 import com.raikar.moviegallery.domain.model.Movie
 import com.raikar.moviegallery.domain.model.MovieDetail
+import com.raikar.moviegallery.domain.model.ProductionCountry
 
 /** How many cast members the detail screen shows. */
 private const val MAX_CAST = 10
@@ -44,7 +46,12 @@ internal fun MovieDetailDto.toDomain(): MovieDetail =
                 ?.take(MAX_CAST)
                 ?.map { it.toDomain() }
                 .orEmpty(),
+        productionCountries = productionCountries.mapNotNull { it.toDomain() },
     )
+
+/** Null for an entry missing its code or name, which the screen could not label or look up. */
+private fun ProductionCountryDto.toDomain(): ProductionCountry? =
+    if (code.isBlank() || name.isBlank()) null else ProductionCountry(code = code.trim(), name = name.trim())
 
 private fun CastMemberDto.toDomain(): CastMember =
     CastMember(

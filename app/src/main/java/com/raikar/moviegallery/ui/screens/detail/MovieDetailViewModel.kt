@@ -5,10 +5,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.raikar.moviegallery.domain.model.DataResult
 import com.raikar.moviegallery.domain.model.MovieDetail
+import com.raikar.moviegallery.domain.model.ProductionCountry
+import com.raikar.moviegallery.domain.usecase.GetCountryDetailsUseCase
 import com.raikar.moviegallery.domain.usecase.GetMovieUseCase
 import com.raikar.moviegallery.domain.usecase.ObserveIsInWatchlistUseCase
 import com.raikar.moviegallery.domain.usecase.ToggleWatchlistUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,10 +27,14 @@ class MovieDetailViewModel
         private val getMovie: GetMovieUseCase,
         observeIsInWatchlist: ObserveIsInWatchlistUseCase,
         private val toggleWatchlist: ToggleWatchlistUseCase,
+        private val getCountryDetails: GetCountryDetailsUseCase,
     ) : ViewModel() {
         private val movieId: Int = checkNotNull(savedStateHandle["movieId"])
 
         private val _uiState = MutableStateFlow(MovieDetailUiState())
+
+        /** The in-flight country lookup, cancelled when the sheet closes or another country opens. */
+        private var countryJob: Job? = null
         val uiState: StateFlow<MovieDetailUiState> = _uiState.asStateFlow()
 
         init {
@@ -46,6 +53,40 @@ class MovieDetailViewModel
         /** [movie] comes from the screen's loaded branch, so it is never stale or null. */
         fun onToggleWatchlist(movie: MovieDetail) {
             viewModelScope.launch { toggleWatchlist(movie.summary) }
+        }
+
+        fun onCountryClick(country: ProductionCountry) = loadCountry(country)
+
+        fun retryCountry() {
+            _uiState.value.countrySheet?.let { loadCountry(it.country) }
+        }
+
+        fun onCountrySheetDismiss() {
+            countryJob?.cancel()
+            _uiState.update { it.copy(countrySheet = null) }
+        }
+
+        /** Failures stay inside the sheet; the screen-level [MovieDetailUiState.error] is never touched. */
+        private fun loadCountry(country: ProductionCountry) {
+            countryJob?.cancel()
+            _uiState.update { it.copy(countrySheet = CountrySheetState(country = country)) }
+            countryJob =
+                viewModelScope.launch {
+                    val result = getCountryDetails(country.code)
+                    val sheet =
+                        when (result) {
+                            is DataResult.Success ->
+                                CountrySheetState(
+                                    country = country,
+                                    isLoading = false,
+                                    details = result.data,
+                                    notFound = result.data == null,
+                                )
+                            is DataResult.Failure ->
+                                CountrySheetState(country = country, isLoading = false, error = result.error)
+                        }
+                    _uiState.update { it.copy(countrySheet = sheet) }
+                }
         }
 
         private fun load() {

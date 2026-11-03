@@ -1,0 +1,18 @@
+# The details sheet for one production country on Movie Detail. `country` is null for codes the API
+# does not know, such as historical ones TMDB still uses (SU, YU, XC).
+query CountryDetails($code: ID!) {
+  country(code: $code) {
+    code
+    name
+    native
+    emoji
+    capital
+    currencies
+    continent {
+      name
+    }
+    languages {
+      name
+    }
+  }
+}

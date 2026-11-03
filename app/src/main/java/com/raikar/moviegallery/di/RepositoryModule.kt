@@ -3,12 +3,14 @@ package com.raikar.moviegallery.di
 import com.raikar.moviegallery.data.remote.auth.FirebaseAuthTokenProvider
 import com.raikar.moviegallery.data.repository.AiChatRepositoryImpl
 import com.raikar.moviegallery.data.repository.AuthRepositoryImpl
+import com.raikar.moviegallery.data.repository.CountryRepositoryImpl
 import com.raikar.moviegallery.data.repository.MovieRepositoryImpl
 import com.raikar.moviegallery.data.repository.TvShowRepositoryImpl
 import com.raikar.moviegallery.data.repository.WatchlistRepositoryImpl
 import com.raikar.moviegallery.domain.repository.AiChatRepository
 import com.raikar.moviegallery.domain.repository.AuthRepository
 import com.raikar.moviegallery.domain.repository.AuthTokenProvider
+import com.raikar.moviegallery.domain.repository.CountryRepository
 import com.raikar.moviegallery.domain.repository.MovieRepository
 import com.raikar.moviegallery.domain.repository.TvShowRepository
 import com.raikar.moviegallery.domain.repository.WatchlistRepository
@@ -44,4 +46,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindAuthTokenProvider(impl: FirebaseAuthTokenProvider): AuthTokenProvider
+
+    @Binds
+    @Singleton
+    abstract fun bindCountryRepository(impl: CountryRepositoryImpl): CountryRepository
 }
