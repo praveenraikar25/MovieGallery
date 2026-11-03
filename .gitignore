@@ -65,6 +65,9 @@ captures/
 .idea/dictionaries
 .idea/libraries
 .idea/caches
+# Machine-specific: holds the local JDK name
+.idea/misc.xml
+.idea/inspectionProfiles
 
 # Keystore files
 *.jks
