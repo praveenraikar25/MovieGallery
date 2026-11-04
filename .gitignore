@@ -107,3 +107,6 @@ lint/reports/
 
 # macOS
 .DS_Store
+
+# Kotlin 2.x compiler/session caches (created by the KMP plugin)
+.kotlin/

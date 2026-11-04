@@ -1,6 +1,6 @@
 # MovieGallery
 
-Android app (package `com.raikar.moviegallery`).
+Android app (package `com.raikar.moviegallery`), moving to Kotlin Multiplatform: `:app` is the Android application, `:shared` is a KMP library (Android, `iosArm64`, `iosSimulatorArm64`) holding the code both platforms will use. No iOS app consumes it yet.
 
 ## Tech Stack
 
@@ -10,7 +10,7 @@ Always use the latest stable Android tech stack. Concretely:
 - **UI**: Jetpack Compose with Material 3 for all UI. Do not add new XML layouts or View-based Activities/Fragments.
 - **DI**: Hilt (`@HiltAndroidApp`, `@AndroidEntryPoint`, `@HiltViewModel`, `@Module`/`@InstallIn`).
 - **Networking/async**: Retrofit for REST calls, Apollo Kotlin for GraphQL, Kotlin Coroutines/Flow for async data. Repositories expose main-safe suspend functions / `Flow`; ViewModels expose `StateFlow`.
-- **Persistence**: Room 3 (`androidx.room3`, not Room 2's `androidx.room`) for on-device data. DAOs return `Flow` / suspend; schemas are exported to `app/schemas/` and committed, and there is no destructive fallback — a schema change needs a real `Migration`.
+- **Persistence**: Room 3 (`androidx.room3`, not Room 2's `androidx.room`) for on-device data. DAOs return `Flow` / suspend; schemas are exported to `shared/schemas/` and committed, and there is no destructive fallback — a schema change needs a real `Migration`.
 - **Dependencies**: when adding any new library, use its latest stable release and add it via the version catalog.
 
 ## Code style
@@ -25,7 +25,9 @@ For layering and module structure (Clean Architecture: UI / Domain / Data, multi
 ## Commands
 
 - `./gradlew assembleDebug` — build; `./gradlew test` — all JVM unit tests (no instrumented tests of note). Room DAO/repository tests run under Robolectric against a real database (`testutil/TestDatabases.kt`), with `@Config(application = Application::class)` so the app's Firebase setup isn't started.
-- Single test: `./gradlew :app:testDebugUnitTest --tests "com.raikar.moviegallery.ui.screens.home.HomeViewModelTest"` (append `.methodName` for one method).
+- Single test: `./gradlew :app:testDebugUnitTest --tests "com.raikar.moviegallery.ui.screens.home.HomeViewModelTest"` (append `.methodName` for one method). Shared-module tests: `./gradlew :shared:testAndroidHostTest --tests "…"`.
+- `./gradlew test` includes `:shared`'s JVM tests (its `test` task wraps `testAndroidHostTest`). iOS runs separately: `./gradlew :shared:iosSimulatorArm64Test` (needs Xcode and an iOS simulator runtime).
+- `:shared` common code must compile for iOS: no `android.*`, `java.*` or `javax.*` imports in `commonMain`/`commonTest`, and test names can't contain `,` `.` `:` `;` (Kotlin/Native rejects them). Check with `./gradlew :shared:compileKotlinIosSimulatorArm64`.
 
 ## Build prerequisites
 
@@ -38,11 +40,16 @@ For layering and module structure (Clean Architecture: UI / Domain / Data, multi
 
 `NetworkModule` provides two separate Retrofit stacks selected by qualifier: `@TmdbClient` (`TmdbApi`, movies, bearer-token auth) and `@BffClient` (`BffApi`, TV shows, a separate demo host with its own OkHttp client). New endpoints must pick the right qualifier; Retrofit base URLs need a trailing slash. Authentication is a third, non-Retrofit backend: Firebase Auth, reached through `AuthRepository` and mapped to `AuthError` by `safeAuthCall` (`data/remote/auth/`). The Google ID token comes from Credential Manager in the UI layer (`ui/screens/login/GoogleSignIn.kt`) because it needs an Activity; only the token string crosses into the repository.
 
-The fourth backend is GraphQL: the public, unauthenticated Countries API, reached through the single `ApolloClient` in `GraphQlModule` (derived from the shared base `OkHttpClient`; no qualifier while it is the only Apollo client). Its schema and `.graphql` operations live in `app/src/main/graphql/countries/`, and Apollo generates typed models into `data/remote/graphql/countries` at build time — they stay in the data layer. Apollo returns failures on the response instead of throwing, so wrap calls in `safeGraphQlCall`, which maps them to the same `AppError`s as `safeApiCall`. `CountryRepository` backs the production-country details sheet on Movie Detail.
+The fourth backend is GraphQL: the public, unauthenticated Countries API, reached through the single `ApolloClient` in `GraphQlModule` (derived from the shared base `OkHttpClient`; no qualifier while it is the only Apollo client). Its schema and `.graphql` operations live in `shared/src/commonMain/graphql/countries/`, and Apollo generates typed models into `data/remote/graphql/countries` at build time — they stay in the data layer. Apollo returns failures on the response instead of throwing, so wrap calls in `safeGraphQlCall`, which maps them to the same `AppError`s as `safeApiCall`. `CountryRepository` backs the production-country details sheet on Movie Detail.
 
 ## Repo map
 
-All source lives under `app/src/main/java/com/raikar/moviegallery/`:
+Source lives in two modules, with the same `com.raikar.moviegallery.*` packages in both:
+
+- `:shared` — `shared/src/commonMain/kotlin/com/raikar/moviegallery/` (per-platform `actual`s in `androidMain/` and `iosMain/`): all of `domain/`; from `data/`, the DTOs and mappers, `TmdbGenres`/`TmdbImages`, `local/` (Room), the Countries GraphQL code, and the watchlist and country repositories. Tests: `shared/src/commonTest/` (plain Kotlin, `kotlin.test`, runs on JVM and iOS) and `shared/src/androidHostTest/` (JVM-only).
+- `:app` — `app/src/main/java/com/raikar/moviegallery/`: all UI, `di/`, and the data code still tied to the JVM or Android — Retrofit APIs and `SafeApiCall`, `auth/`, `ai/`, and the movie, TV-show, auth and AI repositories. Tests needing Robolectric, MockWebServer, MockK or classpath JSON fixtures stay in `app/src/test/`.
+
+The per-package map below applies across both modules:
 
 - `ui/screens/<feature>/` — one package per screen: `<Feature>Screen.kt` (Compose UI), `<Feature>ViewModel.kt` (`@HiltViewModel`, exposes `StateFlow`), `<Feature>UiState.kt`. Existing features: `home`, `search`, `detail`, `watchlist`, `profile`, `login`, `chat`, `tvshows`.
 - `ui/navigation/` — `Destinations.kt` / `Routes` (route constants), `AppNavHost.kt` (`NavHost` graph), `AppSessionViewModel.kt` (start route from the persisted session, sign-out), `MainScaffold.kt` (bottom nav / tab scaffold for top-level tabs).
@@ -52,19 +59,19 @@ All source lives under `app/src/main/java/com/raikar/moviegallery/`:
 - `domain/repository/` — repository interfaces (`<Thing>Repository`), implemented in `data/repository/`.
 - `domain/usecase/` — one class per use case, invoked from a ViewModel; wraps a repository call.
 - `data/remote/` — `auth/` (`safeAuthCall`, Firebase Auth error mapping), `TmdbApi.kt` (Retrofit service), `dto/` (network DTOs), `MovieMappers.kt` (DTO → domain mapping), `SafeApiCall.kt` (network error wrapping), `ai/` (Firebase AI client), `SafeGraphQlCall.kt` + `CountryMappers.kt` (GraphQL error wrapping and Apollo model → domain mapping; generated Apollo code lands in `graphql/countries`).
-- `data/repository/` — repository implementations (`<Thing>RepositoryImpl.kt`), or a static/in-memory impl where there's no backing API yet (e.g. `StaticTvShowRepository.kt`).
+- `data/repository/` — repository implementations (`<Thing>RepositoryImpl.kt`), or a static/in-memory impl where there's no backing API yet. Shared ones (`WatchlistRepositoryImpl`, `CountryRepositoryImpl`) take plain constructor params, with no annotations.
 - `data/local/` — the Room database (`MovieGalleryDatabase`), its DAOs, entities, column converters and entity ↔ domain mappers. The watchlist lives here, keyed by the signed-in account's Firebase uid.
-- `di/` — Hilt modules: `NetworkModule` (Retrofit/OkHttp), `RepositoryModule` (`@Binds` interface → impl), `DispatchersModule`, `AiModule`, `GraphQlModule` (`ApolloClient`), `DatabaseModule` (Room database + DAOs), `ClockModule` (`java.time.Clock`, injected so tests control timestamps). `di/qualifier/` holds `@Qualifier` annotations.
+- `di/` — Hilt modules: `NetworkModule` (Retrofit/OkHttp), `RepositoryModule` (`@Binds` interface → impl), `DispatchersModule`, `AiModule`, `GraphQlModule` (`ApolloClient`), `DatabaseModule` (Room database + DAOs), `ClockModule` (`kotlin.time.Clock`, injected so tests control timestamps), `SharedModule` (`@Provides` for every `:shared` class Hilt hands out: use cases and shared repositories — `commonMain` can't use `@Inject`). `di/qualifier/` holds `@Qualifier` annotations.
 
 ## Adding a feature screen
 
 Touch these in order:
 
-1. `domain/model/` — add/extend the domain model if needed.
-2. `domain/repository/<Thing>Repository.kt` — interface with suspend/`Flow` methods.
-3. `data/repository/<Thing>RepositoryImpl.kt` — implementation (or a static impl if there's no API yet).
-4. `di/RepositoryModule.kt` — `@Binds` the new repository interface to its impl.
-5. `domain/usecase/` — one use case class wrapping the repository call the screen needs.
+1. `domain/model/` (`:shared` `commonMain`) — add/extend the domain model if needed.
+2. `domain/repository/<Thing>Repository.kt` (`:shared`) — interface with suspend/`Flow` methods.
+3. `data/repository/<Thing>RepositoryImpl.kt` — implementation (or a static impl if there's no API yet). In `:shared` if it only needs multiplatform libraries; in `:app` if it needs Retrofit, Firebase or Android APIs.
+4. `:app` `di/` — `@Binds` it in `RepositoryModule.kt` for an `:app` impl (`@Inject` constructor), or add a `@Provides @Singleton` to `SharedModule.kt` for a `:shared` impl.
+5. `domain/usecase/` (`:shared`) — one use case class wrapping the repository call the screen needs, with no annotations, plus a `@Provides` for it in `SharedModule.kt`.
 6. `ui/screens/<feature>/` — `<Feature>UiState.kt`, `<Feature>ViewModel.kt` (`@HiltViewModel`, injects the use case, exposes `StateFlow<UiState>`), `<Feature>Screen.kt` (Compose UI, `hiltViewModel()`).
 7. `ui/navigation/Destinations.kt` — add a route constant.
 8. `ui/navigation/AppNavHost.kt` — register the composable route.
@@ -73,15 +80,15 @@ Touch these in order:
 
 ## Adding a TMDB endpoint
 
-1. `data/remote/dto/` — response DTO(s) matching the TMDB JSON shape.
-2. `data/remote/TmdbApi.kt` — new `@GET`/`@POST` method.
-3. `data/remote/MovieMappers.kt` — DTO → domain model mapping function.
-4. `domain/repository/` + `data/repository/...Impl.kt` — expose the call through the repository layer (wrap with `SafeApiCall`).
+1. `data/remote/dto/` (`:shared`) — response DTO(s) matching the TMDB JSON shape.
+2. `data/remote/TmdbApi.kt` (`:app`) — new `@GET`/`@POST` method.
+3. `data/remote/MovieMappers.kt` (`:shared`) — DTO → domain model mapping function. Public for now (marked `TEMP`), because the Retrofit repositories in `:app` call it.
+4. `domain/repository/` (`:shared`) + `data/repository/...Impl.kt` (`:app`) — expose the call through the repository layer (wrap with `SafeApiCall`).
 5. `app/src/test/java/.../data/remote/` — add a fixture + test (see `Fixtures.kt`, `FakeTmdbApi.kt` for patterns).
 
 ## Adding a GraphQL query
 
-1. `app/src/main/graphql/countries/` — add a `.graphql` operation; the build validates it against the committed `schema.graphqls` (refresh with `./gradlew :app:downloadCountriesApolloSchemaFromIntrospection`).
-2. `data/remote/` — map the generated `…Query.Data` to a domain model (see `CountryMappers.kt`).
-3. `domain/repository/` + `data/repository/...Impl.kt` — call `apollo.query(...).execute()` inside `safeGraphQlCall` on the `@IoDispatcher`.
-4. `app/src/test/java/.../data/` — mapper test with generated models, and a repository test running a real `ApolloClient` against `MockWebServerRule` with a JSON fixture (see `CountryRepositoryImplTest.kt`).
+1. `shared/src/commonMain/graphql/countries/` — add a `.graphql` operation; the build validates it against the committed `schema.graphqls` (refresh with `./gradlew :shared:downloadCountriesApolloSchemaFromIntrospection`; regenerate models with `./gradlew :shared:generateCountriesApolloSources`).
+2. `data/remote/` (`:shared`) — map the generated `…Query.Data` to a domain model (see `CountryMappers.kt`).
+3. `domain/repository/` + `data/repository/...Impl.kt` (both `:shared`) — call `apollo.query(...).execute()` inside `safeGraphQlCall` on an injected dispatcher, and provide it from `SharedModule.kt` with the `@IoDispatcher` one.
+4. Tests — a mapper test with generated models in `shared/src/commonTest/`, and in `app/src/test/java/.../data/` a repository test running a real `ApolloClient` against `MockWebServerRule` with a JSON fixture (see `CountryRepositoryImplTest.kt`).

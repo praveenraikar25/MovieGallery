@@ -4,7 +4,9 @@ schema: spec-driven
 # tech stack, repo layout, build prerequisites and commands — read it rather than
 # restating it here. Only constraints that guide OpenSpec artifacts live below.
 context: |
-  MovieGallery is a single-module Android app (package com.raikar.moviegallery).
+  MovieGallery is an Android app (package com.raikar.moviegallery) moving to Kotlin
+  Multiplatform: :app is the Android application, :shared is a KMP library (Android +
+  iOS targets) holding the domain layer and multiplatform-ready data code.
   Read CLAUDE.md before writing any artifact; its tech-stack, layering and
   "Adding a feature screen" / "Adding a TMDB endpoint" checklists are binding.
   Data comes from four separate backends: TMDB (movies), a BFF demo host
