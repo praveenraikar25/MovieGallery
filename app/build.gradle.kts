@@ -11,28 +11,6 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.google.services)
-    alias(libs.plugins.room3)
-    alias(libs.plugins.apollo)
-}
-
-// Exported schemas are committed so each future migration can be checked against
-// the version it upgrades from.
-room3 {
-    schemaDirectory("$projectDir/schemas")
-}
-
-// The Countries GraphQL API backs the production-country details on Movie Detail. The schema is
-// committed so builds never need the network; refresh it with
-// ./gradlew :app:downloadCountriesApolloSchemaFromIntrospection
-apollo {
-    service("countries") {
-        packageName.set("com.raikar.moviegallery.data.remote.graphql.countries")
-        srcDir("src/main/graphql/countries")
-        introspection {
-            endpointUrl.set("https://countries.trevorblades.com/graphql")
-            schemaFile.set(file("src/main/graphql/countries/schema.graphqls"))
-        }
-    }
 }
 
 ktlint {
@@ -121,6 +99,8 @@ androidComponents {
 }
 
 dependencies {
+    implementation(project(":shared"))
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -142,7 +122,6 @@ dependencies {
     ksp(libs.hilt.android.compiler)
 
     implementation(libs.room3.runtime)
-    ksp(libs.room3.compiler)
 
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.play.services)

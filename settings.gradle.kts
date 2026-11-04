@@ -24,4 +24,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "MovieGallery"
 include(":app")
+include(":shared")
  
