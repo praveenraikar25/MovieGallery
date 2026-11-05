@@ -7,6 +7,7 @@ import com.raikar.moviegallery.testutil.fakeHttpServer
 import com.raikar.moviegallery.testutil.movieDetailJson
 import com.raikar.moviegallery.testutil.tmdbApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.AfterTest
@@ -19,7 +20,8 @@ import kotlin.test.assertTrue
 class MovieRepositoryImplTest {
     private val server = fakeHttpServer()
 
-    private fun repository() = MovieRepositoryImpl(tmdbApi(server), UnconfinedTestDispatcher())
+    /** On the test's own scheduler: a dispatcher with a scheduler of its own is never advanced. */
+    private fun TestScope.repository() = MovieRepositoryImpl(tmdbApi(server), UnconfinedTestDispatcher(testScheduler))
 
     @AfterTest
     fun tearDown() = server.close()

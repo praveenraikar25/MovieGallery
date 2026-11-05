@@ -7,6 +7,7 @@ import com.raikar.moviegallery.testutil.asTvShowListJson
 import com.raikar.moviegallery.testutil.bffApi
 import com.raikar.moviegallery.testutil.fakeHttpServer
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.AfterTest
@@ -18,8 +19,9 @@ import kotlin.test.assertIs
 class TvShowRepositoryImplTest {
     private val server = fakeHttpServer()
 
-    private fun repository(tokenProvider: FakeAuthTokenProvider = FakeAuthTokenProvider()) =
-        TvShowRepositoryImpl(bffApi(server, tokenProvider), UnconfinedTestDispatcher())
+    /** On the test's own scheduler: a dispatcher with a scheduler of its own is never advanced. */
+    private fun TestScope.repository(tokenProvider: FakeAuthTokenProvider = FakeAuthTokenProvider()) =
+        TvShowRepositoryImpl(bffApi(server, tokenProvider), UnconfinedTestDispatcher(testScheduler))
 
     @AfterTest
     fun tearDown() = server.close()

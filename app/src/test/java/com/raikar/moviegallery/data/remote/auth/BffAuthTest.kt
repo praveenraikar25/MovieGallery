@@ -113,7 +113,7 @@ class BffAuthTest {
             server.enqueue(500)
             enqueueShows()
             val provider = FakeAuthTokenProvider()
-            val repository = TvShowRepositoryImpl(bffApi(server, provider), UnconfinedTestDispatcher())
+            val repository = TvShowRepositoryImpl(bffApi(server, provider), UnconfinedTestDispatcher(testScheduler))
 
             repository.topTvShows(page = 1)
             repository.topTvShows(page = 1)
@@ -126,7 +126,10 @@ class BffAuthTest {
     fun `a missing token sends no request and surfaces as AuthRequired`() =
         runTest {
             val repository =
-                TvShowRepositoryImpl(bffApi(server, FakeAuthTokenProvider(cached = null)), UnconfinedTestDispatcher())
+                TvShowRepositoryImpl(
+                    bffApi(server, FakeAuthTokenProvider(cached = null)),
+                    UnconfinedTestDispatcher(testScheduler),
+                )
 
             val result = repository.topTvShows(page = 1)
 
