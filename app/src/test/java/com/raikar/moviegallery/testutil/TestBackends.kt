@@ -2,14 +2,10 @@ package com.raikar.moviegallery.testutil
 
 import com.raikar.moviegallery.data.remote.BffApi
 import com.raikar.moviegallery.data.remote.TmdbApi
-import com.raikar.moviegallery.data.remote.auth.BffAuthInterceptor
-import com.raikar.moviegallery.data.remote.auth.BffTokenAuthenticator
-import com.raikar.moviegallery.data.remote.testJson
+import com.raikar.moviegallery.data.remote.createBffHttpClient
+import com.raikar.moviegallery.data.remote.createTmdbHttpClient
 import com.raikar.moviegallery.domain.repository.AuthTokenProvider
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import retrofit2.Retrofit
-import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import io.ktor.client.engine.okhttp.OkHttp
 
 /*
  * The only test file that knows which HTTP stack the app uses. Every API and repository test
@@ -24,45 +20,27 @@ fun fakeHttpServer(): FakeHttpServer = MockWebServerHttpServer()
 fun tmdbApi(
     server: FakeHttpServer,
     token: String = "test-token",
-): TmdbApi {
-    val client =
-        OkHttpClient
-            .Builder()
-            .addInterceptor { chain ->
-                chain.proceed(
-                    chain
-                        .request()
-                        .newBuilder()
-                        .header("Authorization", "Bearer $token")
-                        .header("Accept", "application/json")
-                        .build(),
-                )
-            }.build()
-    return retrofit(client, "${server.origin}/3/").create(TmdbApi::class.java)
-}
+): TmdbApi =
+    TmdbApi(
+        createTmdbHttpClient(
+            engine = OkHttp.create(),
+            accessToken = token,
+            baseUrl = "${server.origin}/3/",
+        ),
+    )
 
 /** [BffApi] pointed at [server], authenticating with [tokenProvider] and treating [bffHost] as the BFF. */
 fun bffApi(
     server: FakeHttpServer,
     tokenProvider: AuthTokenProvider = FakeAuthTokenProvider(),
     bffHost: String = server.host,
-): BffApi {
-    val client =
-        OkHttpClient
-            .Builder()
-            .addInterceptor(BffAuthInterceptor(tokenProvider))
-            .authenticator(BffTokenAuthenticator(tokenProvider, bffHost))
-            .build()
-    return retrofit(client, "${server.origin}/").create(BffApi::class.java)
-}
-
-private fun retrofit(
-    client: OkHttpClient,
-    baseUrl: String,
-): Retrofit =
-    Retrofit
-        .Builder()
-        .baseUrl(baseUrl)
-        .client(client)
-        .addConverterFactory(testJson.asConverterFactory("application/json; charset=utf-8".toMediaType()))
-        .build()
+): BffApi =
+    BffApi(
+        createBffHttpClient(
+            engine = OkHttp.create(),
+            tokenProvider = tokenProvider,
+            appVersion = "1",
+            baseUrl = "${server.origin}/",
+            bffHost = bffHost,
+        ),
+    )

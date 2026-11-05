@@ -2,58 +2,78 @@ package com.raikar.moviegallery.data.remote
 
 import com.raikar.moviegallery.data.remote.dto.MovieDetailDto
 import com.raikar.moviegallery.data.remote.dto.MovieListResponseDto
-import retrofit2.http.GET
-import retrofit2.http.Path
-import retrofit2.http.Query
+import io.ktor.client.HttpClient
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
 
 /**
- * TMDB v3 REST surface. Authentication is a v4 bearer token attached by an
- * interceptor, so no endpoint takes an `api_key` parameter.
+ * TMDB v3 REST surface over a client from [createTmdbHttpClient]. Authentication is a v4 bearer
+ * token the client adds, so no endpoint takes an `api_key` parameter. Paths are relative to
+ * [BASE_URL] and must not start with `/`.
  */
-interface TmdbApi {
-    @GET("movie/popular")
+class TmdbApi(
+    private val client: HttpClient,
+) {
     suspend fun popular(
-        @Query("language") language: String = DEFAULT_LANGUAGE,
-        @Query("page") page: Int = 1,
-    ): MovieListResponseDto
+        language: String = DEFAULT_LANGUAGE,
+        page: Int = 1,
+    ): MovieListResponseDto = movieList("movie/popular", language, page)
 
-    @GET("movie/top_rated")
     suspend fun topRated(
-        @Query("language") language: String = DEFAULT_LANGUAGE,
-        @Query("page") page: Int = 1,
-    ): MovieListResponseDto
+        language: String = DEFAULT_LANGUAGE,
+        page: Int = 1,
+    ): MovieListResponseDto = movieList("movie/top_rated", language, page)
 
-    @GET("movie/now_playing")
     suspend fun nowPlaying(
-        @Query("language") language: String = DEFAULT_LANGUAGE,
-        @Query("page") page: Int = 1,
-    ): MovieListResponseDto
+        language: String = DEFAULT_LANGUAGE,
+        page: Int = 1,
+    ): MovieListResponseDto = movieList("movie/now_playing", language, page)
 
-    @GET("movie/upcoming")
     suspend fun upcoming(
-        @Query("language") language: String = DEFAULT_LANGUAGE,
-        @Query("page") page: Int = 1,
-    ): MovieListResponseDto
+        language: String = DEFAULT_LANGUAGE,
+        page: Int = 1,
+    ): MovieListResponseDto = movieList("movie/upcoming", language, page)
 
     /** TMDB answers with HTTP 422 if [query] is blank, so callers must not send one. */
-    @GET("search/movie")
     suspend fun searchMovies(
-        @Query("query") query: String,
-        @Query("include_adult") includeAdult: Boolean = false,
-        @Query("language") language: String = DEFAULT_LANGUAGE,
-        @Query("page") page: Int = 1,
-    ): MovieListResponseDto
+        query: String,
+        includeAdult: Boolean = false,
+        language: String = DEFAULT_LANGUAGE,
+        page: Int = 1,
+    ): MovieListResponseDto =
+        client
+            .get("search/movie") {
+                parameter("query", query)
+                parameter("include_adult", includeAdult)
+                parameter("language", language)
+                parameter("page", page)
+            }.decode()
 
     /** Details and cast in a single request via `append_to_response`. */
-    @GET("movie/{movieId}")
     suspend fun movieDetail(
-        @Path("movieId") movieId: Int,
-        @Query("append_to_response") append: String = "credits",
-        @Query("language") language: String = DEFAULT_LANGUAGE,
-    ): MovieDetailDto
+        movieId: Int,
+        append: String = "credits",
+        language: String = DEFAULT_LANGUAGE,
+    ): MovieDetailDto =
+        client
+            .get("movie/$movieId") {
+                parameter("append_to_response", append)
+                parameter("language", language)
+            }.decode()
+
+    private suspend fun movieList(
+        path: String,
+        language: String,
+        page: Int,
+    ): MovieListResponseDto =
+        client
+            .get(path) {
+                parameter("language", language)
+                parameter("page", page)
+            }.decode()
 
     companion object {
-        /** Trailing slash is required by Retrofit for relative endpoint paths. */
+        /** The trailing slash makes endpoint paths resolve under `/3/`. */
         const val BASE_URL = "https://api.themoviedb.org/3/"
         const val DEFAULT_LANGUAGE = "en-US"
     }

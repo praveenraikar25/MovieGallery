@@ -88,7 +88,7 @@ Without `expectSuccess`, Ktor hands a 404 body to the JSON decoder. With it, Kto
 | `ResponseException` | `Unauthorized` (401), `NotFound` (404), otherwise `Http(code)` | Read from `response.status.value` |
 | `HttpRequestTimeoutException`, `ConnectTimeoutException`, `SocketTimeoutException` | `Network` | Listed explicitly, so the result doesn't depend on whether they extend `IOException` |
 | `kotlinx.io.IOException` | `Network` | On JVM and Android this is a typealias of `java.io.IOException`, so it covers OkHttp's exceptions |
-| `ContentConvertException` (incl. `JsonConvertException`), `NoTransformationFoundException`, `SerializationException` | `Serialization` | Ktor wraps decoder failures. A non-JSON 200, such as a captive portal page, also maps here, as Retrofit's converter did |
+| `SerializationException` | `Serialization` | Bodies are decoded with kotlinx.serialization directly (decision 5), so a malformed or non-JSON 200, such as a captive portal page, lands here, as with Retrofit's converter |
 | `Throwable` | `Unknown(e)` | |
 
 The iOS Darwin engine reports failures as `DarwinHttpRequestException`. Task 3.2 checks whether it extends `kotlinx.io.IOException`. If it doesn't, the fallback is an `internal expect fun Throwable.isPlatformNetworkError(): Boolean`: false on Android, an `is DarwinHttpRequestException` check on iOS. `safeApiCall` checks it before `Unknown`.
@@ -115,7 +115,7 @@ Alternative considered: Ktor's `Auth` with `loadTokens` calling the provider and
 
 ### 5. Shared client factories; `:app` supplies the engine and the `BuildConfig` values
 
-`commonMain` gets two factories in `data/remote/`, plus a shared `NetworkJson` with `ignoreUnknownKeys` and `coerceInputValues`. It moves out of `NetworkModule.provideJson`, and the tests' `testJson` becomes an alias of it.
+`commonMain` gets two factories in `data/remote/`, plus a shared `networkJson` with `ignoreUnknownKeys` and `coerceInputValues`. It replaces `NetworkModule.provideJson`, and the tests' `testJson` becomes an alias of it.
 
 ```
 createTmdbHttpClient(engine, accessToken, logLevel, logger, baseUrl = TmdbApi.BASE_URL)
@@ -124,7 +124,6 @@ createBffHttpClient(engine, tokenProvider, appVersion, logLevel, logger, baseUrl
 
 Both factories install the same set:
 
-- `ContentNegotiation` with `NetworkJson`;
 - `HttpTimeout` with 15 s connect and 15 s socket timeouts, matching OkHttp's connect and read, so iOS gets the same limits;
 - `Logging`;
 - `expectSuccess = true`;
@@ -146,15 +145,17 @@ Alternative considered: `expect fun platformEngine()` in `:shared`. Rejected for
 
 ### 6. Logging moves to Ktor's `Logging` plugin, with the token always redacted
 
-`Logging` gets `sanitizeHeader { it == HttpHeaders.Authorization }`. Its level is `BODY` when `BuildConfig.DEBUG` is set and `NONE` otherwise. `:app` passes a `Logger` that writes to logcat: Ktor's Android logger if the chosen version has one, otherwise a three-line `android.util.Log` adapter in `:app`.
+`Logging` gets `sanitizeHeader { it == HttpHeaders.Authorization }`. Its level is `ALL` when `BuildConfig.DEBUG` is set and `NONE` otherwise: Ktor's `BODY` level leaves headers out, so `ALL` is what OkHttp's `BODY` level logged. `:app` passes Ktor's `Logger.ANDROID`, which writes to logcat.
 
-A new test captures logger output with `MockEngine` at `BODY` level and checks that no token value appears. Today nothing tests this.
+A new test captures logger output with `MockEngine` at `ALL` level, checks that headers were logged, and checks that no token value appears. Today nothing tests this.
 
 Alternative considered: keep `HttpLoggingInterceptor` on the preconfigured OkHttp client. Rejected: iOS would have no redaction rule, and the logging setup would be split across two modules.
 
 ### 7. `TmdbApi` and `BffApi` become concrete classes over `HttpClient`
 
-They keep their method names, parameters, default values and `BASE_URL` and `DEFAULT_LANGUAGE` constants, so the repositories' call sites don't change. Each method is a `client.get("movie/popular") { parameter(...) }.body()` call. There's no interface: with the fakes gone, only one implementation exists.
+They keep their method names, parameters, default values and `BASE_URL` and `DEFAULT_LANGUAGE` constants, so the repositories' call sites don't change. Each method is a `client.get("movie/popular") { parameter(...) }.decode()` call. There's no interface: with the fakes gone, only one implementation exists.
+
+`decode()` reads the body as text and decodes it with `networkJson`, whatever the `Content-Type`. Applied: Ktor's `ContentNegotiation` was dropped because checkpoint 1's tests caught two differences from Retrofit. It skips responses with no `Content-Type` (MockWebServer sends none, and the BFF's isn't guaranteed), and it adds an `Accept` header the BFF never got before. Retrofit's converter decoded any body, so decoding directly is the parity choice, and the two content-negotiation libraries aren't needed.
 
 ### 8. Testing what `MockEngine` can't
 
@@ -163,7 +164,7 @@ They keep their method names, parameters, default values and `BASE_URL` and `DEF
 - **Android:** an `androidHostTest` using the OkHttp engine.
 - **iOS:** an `iosTest` using the Darwin engine.
 
-Each sends a request through `safeApiCall` to `http://127.0.0.1:1/`, a port nothing listens on, so the connection is refused offline and right away, and checks for `AppError.Network`. Timeout mapping is tested in `commonTest`, using `MockEngine` with a handler that waits longer than a short `HttpTimeout`.
+Each sends a request through `safeApiCall` to `http://127.0.0.1:1/`, a port nothing listens on, so the connection is refused offline and right away, and checks for `AppError.Network`. Timeout mapping is tested with `MockEngine` handlers that throw each of Ktor's timeout exceptions. Applied: the clients set only connect and socket timeouts, as OkHttp did, and the real engine enforces those, not `MockEngine`, so a handler that waits would never time out.
 
 ### 9. Test placement and fixtures
 
@@ -185,8 +186,9 @@ Once the repositories are in `:shared`, nothing in `:app` calls the four `toDoma
 ## Risks / Trade-offs
 
 - **The rewritten tests could be wrong in the same way the old ones were.** → Checkpoint 0 is written and has to pass against the unchanged Retrofit code. `tasks.md` maps each of the 39 old tests to its replacement, so none is dropped without a decision.
-- **`ContentNegotiation` may add a second `Accept` value.** → The TMDB test asserts the header is exactly `application/json`. If it fails, set the header only once, either in `defaultRequest` or through content negotiation.
-- **`expectSuccess` validation may run before the `Send` hook sees the 401.** → The retry tests catch it. The fallback is named in decision 4.
+- **Extra or duplicated request headers.** → The TMDB test asserts `Accept` is exactly `application/json`. Content negotiation, the one plugin that would add one, isn't installed (decision 7).
+- **`expectSuccess` validation may run before the `Send` hook sees the 401.** → The retry tests catch it. Applied: on Ktor 3.6.1 the `Send` hook sees the 401 first, so the fallback in decision 4 wasn't needed.
+- **Tests that pass a standalone `UnconfinedTestDispatcher()` hang on Ktor.** Such a dispatcher has a scheduler of its own that nothing advances, and Ktor attaches its call job to the caller. → Applied: the repository tests take `runTest`'s `testScheduler`, committed separately before the swap and verified on Retrofit, so checkpoint 1's test diff is still only the harness factory.
 - **`MockEngine` doesn't reproduce real engine failures.** → The real-engine tests in decision 8, plus the explicit timeout rows in decision 3.
 - **The token could leak into debug logs.** → The redaction test in decision 6.
 - **Behaviour on a real device** (pooling, TLS, the real Firebase token) isn't covered by JVM tests. → A manual check on the Galaxy S10 at the end, signed in and signed out (`tasks.md` section 4).

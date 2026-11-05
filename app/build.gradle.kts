@@ -126,8 +126,9 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.play.services)
 
-    implementation(libs.retrofit)
-    implementation(libs.retrofit.converter.kotlinx.serialization)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.ktor.client.logging)
     implementation(platform(libs.okhttp.bom))
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging.interceptor)
@@ -153,6 +154,7 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.test.junit)
+    testImplementation(libs.ktor.client.mock)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(platform(libs.okhttp.bom))
     testImplementation(libs.okhttp.mockwebserver3.junit4)

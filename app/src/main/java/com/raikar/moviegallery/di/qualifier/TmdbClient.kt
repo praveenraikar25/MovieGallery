@@ -3,8 +3,8 @@ package com.raikar.moviegallery.di.qualifier
 import javax.inject.Qualifier
 
 /**
- * The authenticated OkHttp client. Distinguished from the unqualified base client
- * so that the TMDB bearer token can never be attached to image requests.
+ * The TMDB Ktor `HttpClient`, which adds the TMDB bearer token. Its own qualifier keeps it apart from
+ * the BFF client, and the token never reaches the unqualified base `OkHttpClient` that images use.
  */
 @Qualifier
 @Retention(AnnotationRetention.BINARY)

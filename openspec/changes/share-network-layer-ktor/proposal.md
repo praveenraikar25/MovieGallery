@@ -53,7 +53,7 @@ None. No placeholder behaviour is introduced, and this change removes the tempor
 ## Impact
 
 - **Build:**
-  - New catalog entries for Ktor: client core, the OkHttp and Darwin engines, content negotiation, kotlinx JSON serialization, logging and the mock engine. Also `kotlinx-coroutines-test` for `commonTest`.
+  - New catalog entries for Ktor: client core, the OkHttp and Darwin engines, logging and the mock engine. Also `kotlinx-coroutines-test` for `commonTest`.
   - `retrofit` and `retrofit-converter-kotlinx-serialization` are removed.
   - `:app` keeps OkHttp and `mockwebserver3`. `CountryRepositoryImplTest` still needs MockWebServer.
 - **Code:**

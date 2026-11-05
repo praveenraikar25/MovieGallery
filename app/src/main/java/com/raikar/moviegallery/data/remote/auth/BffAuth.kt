@@ -1,78 +1,63 @@
 package com.raikar.moviegallery.data.remote.auth
 
-import com.raikar.moviegallery.data.remote.BffApi
 import com.raikar.moviegallery.domain.repository.AuthTokenProvider
-import kotlinx.coroutines.runBlocking
+import io.ktor.client.plugins.api.Send
+import io.ktor.client.plugins.api.createClientPlugin
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.withTimeoutOrNull
-import okhttp3.Authenticator
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.Interceptor
-import okhttp3.Request
-import okhttp3.Response
-import okhttp3.Route
-import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
 
-/**
- * Thrown instead of sending a BFF request that has no token to carry. It must be an
- * [IOException]: OkHttp only tolerates that type escaping an interceptor.
- */
-class MissingAuthTokenException : IOException("No signed-in user token is available")
+/** Thrown instead of sending a BFF request that has no token to carry. */
+class MissingAuthTokenException : Exception("No signed-in user token is available")
 
-/**
- * Both classes below look the token up with [runBlocking]. That is safe here because OkHttp
- * runs interceptors and authenticators on its own dispatcher threads, never the main thread,
- * and Firebase serves a cached token until shortly before it expires.
- */
 private const val TOKEN_LOOKUP_TIMEOUT_MS = 10_000L
 
-private fun AuthTokenProvider.blockingToken(forceRefresh: Boolean): String? =
-    runBlocking {
-        try {
-            withTimeoutOrNull(TOKEN_LOOKUP_TIMEOUT_MS) { idToken(forceRefresh) }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            null
+/** Configuration for [BffAuth]. */
+class BffAuthConfig {
+    /** Where the signed-in user's Firebase ID token comes from. Required. */
+    var tokenProvider: AuthTokenProvider? = null
+
+    /** Only 401s from this host are retried, so a token is never refreshed for another service. */
+    var bffHost: String = ""
+}
+
+/**
+ * Authenticates BFF requests with the signed-in user's ID token, as the tv-shows spec requires:
+ * - every request carries `Authorization: Bearer <token>`, looked up fresh each time (Firebase
+ *   caches it), so a Retry after sign-in uses the new account's token;
+ * - no request is sent without a token: the call fails with [MissingAuthTokenException];
+ * - a 401 from the BFF host is retried once with a force-refreshed token, and a second 401 is
+ *   returned to the caller.
+ *
+ * Ktor's own `Auth` bearer provider isn't used because it caches tokens across requests, keys its
+ * refresh on `WWW-Authenticate`, and sends the request unauthenticated when there is no token.
+ */
+val BffAuth =
+    createClientPlugin("BffAuth", ::BffAuthConfig) {
+        val tokenProvider = checkNotNull(pluginConfig.tokenProvider) { "BffAuth needs a tokenProvider" }
+        val bffHost = pluginConfig.bffHost
+
+        onRequest { request, _ ->
+            val token = tokenProvider.lookUpToken(forceRefresh = false) ?: throw MissingAuthTokenException()
+            request.headers[HttpHeaders.Authorization] = "Bearer $token"
+        }
+
+        on(Send) { request ->
+            val call = proceed(request)
+            if (call.response.status != HttpStatusCode.Unauthorized || request.url.host != bffHost) return@on call
+            val refreshed = tokenProvider.lookUpToken(forceRefresh = true) ?: return@on call
+            request.headers[HttpHeaders.Authorization] = "Bearer $refreshed"
+            proceed(request)
         }
     }
 
-private fun Request.Builder.bearer(token: String): Request.Builder = header("Authorization", "Bearer $token")
-
-/** Adds the signed-in user's ID token to every request, or fails the call before it is sent. */
-class BffAuthInterceptor(
-    private val tokenProvider: AuthTokenProvider,
-) : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        val token = tokenProvider.blockingToken(forceRefresh = false) ?: throw MissingAuthTokenException()
-        return chain.proceed(
-            chain
-                .request()
-                .newBuilder()
-                .bearer(token)
-                .build(),
-        )
+/** The token, or null when there is none, the lookup fails or it takes longer than 10 s. */
+private suspend fun AuthTokenProvider.lookUpToken(forceRefresh: Boolean): String? =
+    try {
+        withTimeoutOrNull(TOKEN_LOOKUP_TIMEOUT_MS) { idToken(forceRefresh) }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        null
     }
-}
-
-/**
- * On a 401, retries once with a force-refreshed token. Gives up (returning null so the 401 is
- * surfaced) when a 401 was already retried, the request left the BFF host, or no token can be obtained.
- */
-class BffTokenAuthenticator(
-    private val tokenProvider: AuthTokenProvider,
-    private val bffHost: String = BffApi.BASE_URL.toHttpUrl().host,
-) : Authenticator {
-    override fun authenticate(
-        route: Route?,
-        response: Response,
-    ): Request? {
-        if (generateSequence(response.priorResponse) { it.priorResponse }.any { it.code == 401 }) return null
-        if (response.request.url.host != bffHost) return null
-        val token = tokenProvider.blockingToken(forceRefresh = true) ?: return null
-        return response.request
-            .newBuilder()
-            .bearer(token)
-            .build()
-    }
-}

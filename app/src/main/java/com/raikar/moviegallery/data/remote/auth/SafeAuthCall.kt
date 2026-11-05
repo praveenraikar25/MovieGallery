@@ -14,8 +14,8 @@ import kotlin.coroutines.cancellation.CancellationException
 /**
  * The Firebase Auth counterpart to [com.raikar.moviegallery.data.remote.safeApiCall].
  *
- * Separate because auth failures are `FirebaseAuthException` subclasses, not Retrofit
- * `HttpException`s, and map to [AuthError] rather than `AppError`.
+ * Separate because auth failures are `FirebaseAuthException` subclasses, not Ktor
+ * `ResponseException`s, and map to [AuthError] rather than `AppError`.
  *
  * Catch order matters: [FirebaseAuthWeakPasswordException] extends
  * [FirebaseAuthInvalidCredentialsException], so it has to come first.

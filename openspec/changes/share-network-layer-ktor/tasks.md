@@ -41,39 +41,39 @@ No production code changes in this group. Every test below must pass against the
 
 New production code is written without `android.*`, `java.*` or `javax.*` imports (except in `NetworkModule`), so group 3 can move it without edits.
 
-- [ ] 2.1 Add Ktor to `gradle/libs.versions.toml` at its latest stable release, checked on Maven Central at apply time:
-  - libraries: `ktor-client-core`, `ktor-client-okhttp`, `ktor-client-darwin`, `ktor-client-content-negotiation`, `ktor-serialization-kotlinx-json`, `ktor-client-logging` and `ktor-client-mock`;
+- [x] 2.1 Add Ktor to `gradle/libs.versions.toml` at its latest stable release, checked on Maven Central at apply time:
+  - libraries: `ktor-client-core`, `ktor-client-okhttp`, `ktor-client-darwin`, `ktor-client-logging` and `ktor-client-mock` (content negotiation dropped, design decision 7);
   - one `ktor` version ref for all of them.
 
-  Add core, OkHttp, content negotiation, serialization and logging to `:app` `implementation`, and mock to `testImplementation`. If the latest stable is a new major version, note the API differences against design decisions 3 to 6 in a commit-message line. Verify: `./gradlew :app:dependencies --configuration debugRuntimeClasspath` resolves `io.ktor` at that version.
-- [ ] 2.2 Write the shared-ready pieces in `:app`, keeping their existing packages:
+  Add core, OkHttp and logging to `:app` `implementation`, and mock to `testImplementation`. If the latest stable is a new major version, note the API differences against design decisions 3 to 6 in a commit-message line. Verify: `./gradlew :app:dependencies --configuration debugRuntimeClasspath` resolves `io.ktor` at that version.
+- [x] 2.2 Write the shared-ready pieces in `:app`, keeping their existing packages:
   - `NetworkJson`;
   - the `BffAuth` client plugin (design decision 4);
   - `MissingAuthTokenException`, now a plain `Exception`;
-  - `createTmdbHttpClient` and `createBffHttpClient` (design decision 5), with `expectSuccess`, `HttpTimeout` at 15 s, `ContentNegotiation`, `Logging` with `Authorization` redacted, and `defaultRequest`.
+  - `createTmdbHttpClient` and `createBffHttpClient` (design decision 5), with `expectSuccess`, `HttpTimeout` at 15 s, `Logging` with `Authorization` redacted, and `defaultRequest`.
 
   Delete `BffAuthInterceptor` and `BffTokenAuthenticator`. Verify: `./gradlew :app:compileDebugKotlin` passes, and `grep -n runBlocking -r app/src/main` returns nothing.
-- [ ] 2.3 Turn `TmdbApi` and `BffApi` into classes over `HttpClient` with the same method signatures and constants. Endpoint paths have no leading slash (design decision 7). Rewrite `safeApiCall` to follow the mapping table in design decision 3. Verify: `:app:compileDebugKotlin` passes, and `grep -rn retrofit2 app/src/main` returns nothing.
-- [ ] 2.4 Rewrite `NetworkModule`:
+- [x] 2.3 Turn `TmdbApi` and `BffApi` into classes over `HttpClient` with the same method signatures and constants. Endpoint paths have no leading slash (design decision 7). Rewrite `safeApiCall` to follow the mapping table in design decision 3. Verify: `:app:compileDebugKotlin` passes, and `grep -rn retrofit2 app/src/main` returns nothing.
+- [x] 2.4 Rewrite `NetworkModule`:
   - provide `@TmdbClient` and `@BffClient` `HttpClient`s, each on its own `OkHttp.create { preconfigured = base }` engine;
   - pass the `BuildConfig` token, version code and log level, plus a logcat `Logger`;
   - provide `TmdbApi` and `BffApi`;
   - delete the OkHttp-level TMDB and BFF clients and the two Retrofit providers.
 
   Coil and `GraphQlModule` stay as they are. Verify: `./gradlew :app:assembleDebug` passes.
-- [ ] 2.5 Change only `TestBackends.kt` so that `tmdbApi(...)` and `bffApi(...)` build the Ktor clients on the OkHttp engine, still pointed at MockWebServer. If any test fails, fix the production code, never the test. The known suspects are in the design's Risks section. Verify: all group 1 tests pass, and `git diff --stat -- app/src/test` for this group lists only `TestBackends.kt`.
-- [ ] 2.6 Add two `MockEngine` tests in `app/src/test/.../data/remote/`:
-  - at `BODY` log level, a captured `Logger` never sees the TMDB token or the BFF ID token value (design decision 6);
-  - a handler that waits longer than a short `HttpTimeout` maps to `AppError.Network` (design decision 8).
+- [x] 2.5 Change only `TestBackends.kt` so that `tmdbApi(...)` and `bffApi(...)` build the Ktor clients on the OkHttp engine, still pointed at MockWebServer. If any test fails, fix the production code, never the test. The known suspects are in the design's Risks section. Verify: all group 1 tests pass, and `git diff --stat -- app/src/test` for this group lists only `TestBackends.kt`.
+- [x] 2.6 Add two `MockEngine` tests in `app/src/test/.../data/remote/`:
+  - at `ALL` log level, a captured `Logger` sees headers but never the TMDB token or the BFF ID token value (design decision 6);
+  - each Ktor timeout exception thrown by the engine maps to `AppError.Network` (design decision 8).
 
   Verify: both pass.
-- [ ] 2.7 Remove `retrofit` and `retrofit-converter-kotlinx-serialization` from `:app` and from the catalog. Verify: `grep -rn retrofit gradle/libs.versions.toml app/build.gradle.kts` returns nothing, and `./gradlew :app:assembleDebug` passes.
-- [ ] 2.8 Checkpoint 1 gate: run `./gradlew ktlintCheck test assembleDebug`, then install the debug build and confirm that Home rails, search and TV shows load while signed in. Verify: the commands pass and all three screens show data.
+- [x] 2.7 Remove `retrofit` and `retrofit-converter-kotlinx-serialization` from `:app` and from the catalog. Verify: `grep -rn retrofit gradle/libs.versions.toml app/build.gradle.kts` returns nothing, and `./gradlew :app:assembleDebug` passes.
+- [x] 2.8 Checkpoint 1 gate: run `./gradlew ktlintCheck test assembleDebug`, then install the debug build and confirm that Home rails, search and TV shows load while signed in. Verify: the commands pass and all three screens show data.
 
 ## 3. Checkpoint 2: move to `:shared`, tests on `MockEngine`
 
 - [ ] 3.1 In `shared/build.gradle.kts`, add the Ktor dependencies:
-  - `commonMain`: core, content negotiation, serialization and logging, as `api` for core;
+  - `commonMain`: core and logging, with core as `api`;
   - `androidMain`: OkHttp;
   - `iosMain`: Darwin;
   - `commonTest`: mock and `kotlinx-coroutines-test`;
@@ -99,7 +99,7 @@ New production code is written without `android.*`, `java.*` or `javax.*` import
   - `FakeHttpServer` gets a `MockEngine` implementation (design decision 2);
   - `TestBackends.kt` builds the factories on that engine;
   - `TestFixtures.kt` holds the TMDB and BFF JSON fixtures as string constants behind `fixture(name)`;
-  - `testJson` becomes an alias of `NetworkJson`.
+  - `testJson` becomes an alias of `networkJson`.
 
   Delete the moved fixture files from `app/src/test/resources`, keeping the `country_*` and `movie_detail_*countr*` files, which `CountryRepositoryImplTest` uses. Before deleting, confirm with `grep -rn` which files those are. Verify: `:shared:compileTestKotlinIosSimulatorArm64` passes.
 - [ ] 3.6 `git mv` these tests to `shared/src/commonTest`, editing only imports and harness wiring, never assertions:
