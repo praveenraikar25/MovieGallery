@@ -1,107 +1,136 @@
 package com.raikar.moviegallery.data.remote.auth
 
-import com.raikar.moviegallery.domain.repository.AuthTokenProvider
+import com.raikar.moviegallery.data.remote.safeApiCall
+import com.raikar.moviegallery.data.repository.TvShowRepositoryImpl
+import com.raikar.moviegallery.domain.model.AppError
+import com.raikar.moviegallery.domain.model.DataResult
+import com.raikar.moviegallery.testutil.FakeAuthTokenProvider
+import com.raikar.moviegallery.testutil.asTvShowListJson
+import com.raikar.moviegallery.testutil.bffApi
+import com.raikar.moviegallery.testutil.fakeHttpServer
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import mockwebserver3.MockResponse
-import mockwebserver3.junit4.MockWebServerRule
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertThrows
-import org.junit.Rule
-import org.junit.Test
+import kotlin.test.AfterTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
+/**
+ * The BFF token handling, observed from outside: what reaches the server and what the caller gets
+ * back. Backs the tv-shows requirements on the bearer token, the no-token case and the single
+ * refresh retry.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
 class BffAuthTest {
-    @get:Rule
-    val serverRule = MockWebServerRule()
+    private val server = fakeHttpServer()
 
-    private val server get() = serverRule.server
+    @AfterTest
+    fun tearDown() = server.close()
 
-    private class FakeTokenProvider(
-        var cached: String? = "cached",
-        var refreshed: String? = "refreshed",
-    ) : AuthTokenProvider {
-        val forceRefreshCalls = mutableListOf<Boolean>()
+    private fun enqueueShows() = server.enqueue(200, listOf(1).asTvShowListJson())
 
-        override suspend fun idToken(forceRefresh: Boolean): String? {
-            forceRefreshCalls += forceRefresh
-            return if (forceRefresh) refreshed else cached
-        }
-    }
-
-    private fun client(provider: AuthTokenProvider) =
-        OkHttpClient
-            .Builder()
-            .addInterceptor(BffAuthInterceptor(provider))
-            .authenticator(BffTokenAuthenticator(provider, server.hostName))
-            .build()
-
-    private fun call(provider: AuthTokenProvider) =
-        client(provider).newCall(Request.Builder().url(server.url("/")).build())
-
-    private fun enqueue(code: Int) = server.enqueue(MockResponse.Builder().code(code).build())
+    private suspend fun call(
+        provider: FakeAuthTokenProvider,
+        bffHost: String = server.host,
+    ) = safeApiCall { bffApi(server, provider, bffHost).topTvShows(page = 1) }
 
     @Test
     fun `sends the token as a bearer Authorization header`() =
         runTest {
-            enqueue(200)
+            enqueueShows()
 
-            call(FakeTokenProvider()).execute().close()
+            call(FakeAuthTokenProvider())
 
-            assertEquals("Bearer cached", server.takeRequest().headers["Authorization"])
+            assertEquals("Bearer cached", server.takeRequest().header("Authorization"))
         }
 
     @Test
     fun `sends no request when there is no token`() =
         runTest {
-            assertThrows(MissingAuthTokenException::class.java) {
-                call(FakeTokenProvider(cached = null)).execute()
-            }
+            val result = call(FakeAuthTokenProvider(cached = null))
 
+            assertEquals(DataResult.Failure(AppError.AuthRequired), result)
             assertEquals(0, server.requestCount)
         }
 
     @Test
     fun `a 401 is retried once with a refreshed token`() =
         runTest {
-            enqueue(401)
-            enqueue(200)
-            val provider = FakeTokenProvider()
+            server.enqueue(401)
+            enqueueShows()
+            val provider = FakeAuthTokenProvider()
 
-            val response = call(provider).execute()
+            val result = call(provider)
 
-            assertEquals(200, response.code)
-            response.close()
-            assertEquals("Bearer cached", server.takeRequest().headers["Authorization"])
-            assertEquals("Bearer refreshed", server.takeRequest().headers["Authorization"])
+            assertIs<DataResult.Success<*>>(result)
+            assertEquals("Bearer cached", server.takeRequest().header("Authorization"))
+            assertEquals("Bearer refreshed", server.takeRequest().header("Authorization"))
             assertEquals(listOf(false, true), provider.forceRefreshCalls)
         }
 
     @Test
     fun `a persistent 401 is surfaced after a single retry`() =
         runTest {
-            enqueue(401)
-            enqueue(401)
-            enqueue(200)
+            server.enqueue(401)
+            server.enqueue(401)
+            enqueueShows()
 
-            val response = call(FakeTokenProvider()).execute()
+            val result = call(FakeAuthTokenProvider())
 
-            assertEquals(401, response.code)
-            response.close()
+            assertEquals(DataResult.Failure(AppError.Unauthorized), result)
             assertEquals(2, server.requestCount)
         }
 
     @Test
     fun `a 401 is surfaced without a retry when no refreshed token exists`() =
         runTest {
-            enqueue(401)
+            server.enqueue(401)
 
-            val response = call(FakeTokenProvider(refreshed = null)).execute()
+            val result = call(FakeAuthTokenProvider(refreshed = null))
 
-            assertEquals(401, response.code)
-            response.close()
+            assertEquals(DataResult.Failure(AppError.Unauthorized), result)
             assertEquals(1, server.requestCount)
-            assertNull(response.priorResponse)
+        }
+
+    @Test
+    fun `a 401 from another host is not retried`() =
+        runTest {
+            server.enqueue(401)
+            enqueueShows()
+            val provider = FakeAuthTokenProvider()
+
+            val result = call(provider, bffHost = "bff.example")
+
+            assertEquals(DataResult.Failure(AppError.Unauthorized), result)
+            assertEquals(1, server.requestCount)
+            assertEquals(listOf(false), provider.forceRefreshCalls)
+        }
+
+    @Test
+    fun `Retry after a failure looks up the token again`() =
+        runTest {
+            server.enqueue(500)
+            enqueueShows()
+            val provider = FakeAuthTokenProvider()
+            val repository = TvShowRepositoryImpl(bffApi(server, provider), UnconfinedTestDispatcher())
+
+            repository.topTvShows(page = 1)
+            repository.topTvShows(page = 1)
+
+            assertEquals(listOf(false, false), provider.forceRefreshCalls)
+            assertEquals(2, server.requestCount)
+        }
+
+    @Test
+    fun `a missing token sends no request and surfaces as AuthRequired`() =
+        runTest {
+            val repository =
+                TvShowRepositoryImpl(bffApi(server, FakeAuthTokenProvider(cached = null)), UnconfinedTestDispatcher())
+
+            val result = repository.topTvShows(page = 1)
+
+            assertEquals(DataResult.Failure(AppError.AuthRequired), result)
+            assertEquals(0, server.requestCount)
         }
 }
