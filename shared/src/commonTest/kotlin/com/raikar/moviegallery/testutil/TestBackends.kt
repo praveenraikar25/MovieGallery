@@ -5,7 +5,6 @@ import com.raikar.moviegallery.data.remote.TmdbApi
 import com.raikar.moviegallery.data.remote.createBffHttpClient
 import com.raikar.moviegallery.data.remote.createTmdbHttpClient
 import com.raikar.moviegallery.domain.repository.AuthTokenProvider
-import io.ktor.client.engine.okhttp.OkHttp
 
 /*
  * The only test file that knows which HTTP stack the app uses. Every API and repository test
@@ -14,7 +13,9 @@ import io.ktor.client.engine.okhttp.OkHttp
  */
 
 /** A fresh scripted server; close it after the test. */
-fun fakeHttpServer(): FakeHttpServer = MockWebServerHttpServer()
+fun fakeHttpServer(): FakeHttpServer = MockEngineHttpServer()
+
+private val FakeHttpServer.engine get() = (this as MockEngineHttpServer).engine
 
 /** [TmdbApi] pointed at [server] under `/3/`, sending [token] the way the app does. */
 fun tmdbApi(
@@ -23,7 +24,7 @@ fun tmdbApi(
 ): TmdbApi =
     TmdbApi(
         createTmdbHttpClient(
-            engine = OkHttp.create(),
+            engine = server.engine,
             accessToken = token,
             baseUrl = "${server.origin}/3/",
         ),
@@ -37,7 +38,7 @@ fun bffApi(
 ): BffApi =
     BffApi(
         createBffHttpClient(
-            engine = OkHttp.create(),
+            engine = server.engine,
             tokenProvider = tokenProvider,
             appVersion = "1",
             baseUrl = "${server.origin}/",

@@ -93,6 +93,8 @@ Without `expectSuccess`, Ktor hands a 404 body to the JSON decoder. With it, Kto
 
 The iOS Darwin engine reports failures as `DarwinHttpRequestException`. Task 3.2 checks whether it extends `kotlinx.io.IOException`. If it doesn't, the fallback is an `internal expect fun Throwable.isPlatformNetworkError(): Boolean`: false on Android, an `is DarwinHttpRequestException` check on iOS. `safeApiCall` checks it before `Unknown`.
 
+Applied: not needed. On Ktor 3.6.1 a refused connection on the Darwin engine already maps to `Network` through the `IOException` row, which the iOS `RealEngineNetworkErrorTest` confirms, so there is no expect/actual.
+
 ### 4. BFF token handling is a custom Ktor plugin, not Ktor's `Auth` plugin
 
 Ktor's `Auth` bearer provider would break the `tv-shows` spec in three ways:
@@ -169,6 +171,8 @@ Each sends a request through `safeApiCall` to `http://127.0.0.1:1/`, a port noth
 ### 9. Test placement and fixtures
 
 The repository, API, `safeApiCall`, `BffAuth`, logging and mapper tests all move to `shared/src/commonTest`. Their JSON fixtures become string constants in a `commonTest` `TestFixtures.kt`, behind the same `fixture("name.json")` lookup, so call sites don't change. The country fixtures and `CountryRepositoryImplTest` stay in `:app`, which keeps MockWebServer there.
+
+Applied: `grep` showed `CountryRepositoryImplTest` reads only `country_jp.json` and `country_null.json`. The `movie_detail_*countr*` files belong to `MovieMappersTest`, so they moved to `TestFixtures.kt` with the other TMDB fixtures. Two mapper-test edits were needed beyond the move: JUnit's `org.junit.Assert` imports became `kotlin.test` ones (same argument order, including the tolerance overload), and `cast is ordered by TMDB billing order, not response order` was renamed to drop the comma, which Kotlin/Native rejects. No assertion changed. With every `kotlin.test` and Ktor test gone from `:app`, its `kotlin-test-junit` and `ktor-client-mock` test dependencies were removed, and `kotlin-test-junit` left the catalog.
 
 The mapper tests have to move with the mappers. They become `internal` (decision 10), and `:app` tests can't see `internal` declarations of `:shared`.
 

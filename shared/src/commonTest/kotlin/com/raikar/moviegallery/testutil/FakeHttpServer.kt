@@ -69,9 +69,9 @@ internal sealed interface PlannedResponse {
 }
 
 /**
- * The transport-independent bookkeeping both implementations share: per-path queues, sticky
- * connection failures and the request log. Lock-free over immutable state, because OkHttp and
- * MockEngine answer concurrent requests on their own threads and `synchronized` is JVM-only.
+ * The transport-independent bookkeeping behind [FakeHttpServer]: per-path queues, sticky
+ * connection failures and the request log. Lock-free over immutable state, because MockEngine
+ * answers concurrent requests on its own threads and `synchronized` is JVM-only.
  */
 @OptIn(ExperimentalAtomicApi::class)
 internal class ResponsePlan {

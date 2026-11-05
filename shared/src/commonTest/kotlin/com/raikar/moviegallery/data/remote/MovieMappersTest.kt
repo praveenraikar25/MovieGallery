@@ -3,10 +3,10 @@ package com.raikar.moviegallery.data.remote
 import com.raikar.moviegallery.data.remote.dto.MovieDetailDto
 import com.raikar.moviegallery.data.remote.dto.MovieListResponseDto
 import com.raikar.moviegallery.domain.model.ProductionCountry
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * Parses real TMDB response shapes through the production [Json] config and maps
@@ -103,7 +103,7 @@ class MovieMappersTest {
     }
 
     @Test
-    fun `cast is ordered by TMDB billing order, not response order`() {
+    fun `cast is ordered by TMDB billing order and not by response order`() {
         val cast = detail("movie_detail_with_credits.json").toDomain().cast
 
         assertEquals(listOf("David Corenswet", "Rachel Brosnahan", "Nameless Extra"), cast.map { it.name })

@@ -12,8 +12,7 @@ import com.raikar.moviegallery.domain.model.ProductionCountry
 /** How many cast members the detail screen shows. */
 private const val MAX_CAST = 10
 
-// TEMP(share-core-kmp-module): public while the Retrofit repositories in :app use it; data layer only.
-fun MovieSummaryDto.toDomain(): Movie =
+internal fun MovieSummaryDto.toDomain(): Movie =
     Movie(
         id = id,
         title = title,
@@ -25,8 +24,7 @@ fun MovieSummaryDto.toDomain(): Movie =
         backdropUrl = TmdbImages.backdropUrl(backdropPath),
     )
 
-// TEMP(share-core-kmp-module): public while the Retrofit repositories in :app use it; data layer only.
-fun MovieDetailDto.toDomain(): MovieDetail =
+internal fun MovieDetailDto.toDomain(): MovieDetail =
     MovieDetail(
         summary =
             Movie(

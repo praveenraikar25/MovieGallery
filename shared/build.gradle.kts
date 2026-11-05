@@ -41,9 +41,19 @@ kotlin {
             api(libs.kotlinx.serialization.json)
             api(libs.apollo.runtime)
             api(libs.room3.runtime)
+            api(libs.ktor.client.core)
+            implementation(libs.ktor.client.logging)
+        }
+        androidMain.dependencies {
+            implementation(libs.ktor.client.okhttp)
+        }
+        iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
+            implementation(libs.ktor.client.mock)
+            implementation(libs.kotlinx.coroutines.test)
         }
     }
 }

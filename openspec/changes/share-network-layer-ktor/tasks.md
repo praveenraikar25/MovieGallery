@@ -72,7 +72,7 @@ New production code is written without `android.*`, `java.*` or `javax.*` import
 
 ## 3. Checkpoint 2: move to `:shared`, tests on `MockEngine`
 
-- [ ] 3.1 In `shared/build.gradle.kts`, add the Ktor dependencies:
+- [x] 3.1 In `shared/build.gradle.kts`, add the Ktor dependencies:
   - `commonMain`: core and logging, with core as `api`;
   - `androidMain`: OkHttp;
   - `iosMain`: Darwin;
@@ -80,7 +80,7 @@ New production code is written without `android.*`, `java.*` or `javax.*` import
   - `androidHostTest`: nothing extra.
 
   Verify: `./gradlew :shared:compileKotlinIosSimulatorArm64` passes.
-- [ ] 3.2 `git mv` the following into `shared/src/commonMain/kotlin/com/raikar/moviegallery/`, with packages unchanged:
+- [x] 3.2 `git mv` the following into `shared/src/commonMain/kotlin/com/raikar/moviegallery/`, with packages unchanged:
   - `NetworkJson`, the two client factories, `BffAuth`, `MissingAuthTokenException` and `SafeApiCall.kt` (as `internal`);
   - `TmdbApi`, `BffApi`, `MovieRepositoryImpl` and `TvShowRepositoryImpl`, with `@Inject`, `@Singleton` and `@IoDispatcher` removed so they take a plain `CoroutineDispatcher`.
 
@@ -89,26 +89,26 @@ New production code is written without `android.*`, `java.*` or `javax.*` import
   - `NetworkModule` keeps creating the engines and calling the factories.
 
   Verify: `:app:assembleDebug` and `:shared:compileKotlinIosSimulatorArm64` pass, and `grep -rE 'import (android|java|javax)\.' shared/src/commonMain` returns nothing.
-- [ ] 3.3 Add the real-engine tests (design decision 8):
+- [x] 3.3 Add the real-engine tests (design decision 8):
   - `shared/src/androidHostTest/.../RealEngineNetworkErrorTest.kt` on the OkHttp engine;
   - `shared/src/iosTest/.../RealEngineNetworkErrorTest.kt` on the Darwin engine.
 
   Each requests `http://127.0.0.1:1/` through `safeApiCall` and expects `AppError.Network`. If the iOS test returns `Unknown`, add the `isPlatformNetworkError` expect/actual fallback from design decision 3, and record which exception Darwin threw in a comment on the iOS actual. Verify: the first passes under `:shared:testAndroidHostTest` and the second under `:shared:iosSimulatorArm64Test`.
-- [ ] 3.4 Make the four `toDomain` mappers in `MovieMappers.kt` and `TvShowMappers.kt` `internal`, and delete their `TEMP(share-core-kmp-module)` comments (design decision 10). Verify: `grep -rn 'TEMP(share-core-kmp-module)' shared app CLAUDE.md` returns nothing, and both modules compile.
-- [ ] 3.5 Move the test harness to `shared/src/commonTest/.../testutil/`:
+- [x] 3.4 Make the four `toDomain` mappers in `MovieMappers.kt` and `TvShowMappers.kt` `internal`, and delete their `TEMP(share-core-kmp-module)` comments (design decision 10). Verify: `grep -rn 'TEMP(share-core-kmp-module)' shared app CLAUDE.md` returns nothing, and both modules compile.
+- [x] 3.5 Move the test harness to `shared/src/commonTest/.../testutil/`:
   - `FakeHttpServer` gets a `MockEngine` implementation (design decision 2);
   - `TestBackends.kt` builds the factories on that engine;
   - `TestFixtures.kt` holds the TMDB and BFF JSON fixtures as string constants behind `fixture(name)`;
   - `testJson` becomes an alias of `networkJson`.
 
-  Delete the moved fixture files from `app/src/test/resources`, keeping the `country_*` and `movie_detail_*countr*` files, which `CountryRepositoryImplTest` uses. Before deleting, confirm with `grep -rn` which files those are. Verify: `:shared:compileTestKotlinIosSimulatorArm64` passes.
-- [ ] 3.6 `git mv` these tests to `shared/src/commonTest`, editing only imports and harness wiring, never assertions:
+  Delete the moved fixture files from `app/src/test/resources`, keeping the files `CountryRepositoryImplTest` uses. Applied: that is `country_*` only; the `movie_detail_*countr*` files are `MovieMappersTest`'s and moved. Before deleting, confirm with `grep -rn` which files those are. Verify: `:shared:compileTestKotlinIosSimulatorArm64` passes.
+- [x] 3.6 `git mv` these tests to `shared/src/commonTest`, editing only imports and harness wiring, never assertions:
   - `TmdbApiTest`, `BffApiTest`, `MovieRepositoryImplTest`, `TvShowRepositoryImplTest`, `BffAuthTest` and `SafeApiCallTest`;
   - the two tests from 2.6;
   - `MovieMappersTest` and `TvShowMappersTest`.
 
   Remove `ktor-client-mock` from `:app` if nothing there uses it any more. Keep MockWebServer for `CountryRepositoryImplTest`. Verify: all pass under `:shared:testAndroidHostTest` and `:shared:iosSimulatorArm64Test`, `./gradlew :app:testDebugUnitTest` passes, and `git diff -M --stat` shows the moved tests as renames.
-- [ ] 3.7 Update the documentation and project rules:
+- [x] 3.7 Update the documentation and project rules:
   - `CLAUDE.md`:
     - tech stack: Ktor for REST;
     - Backends: two `HttpClient`s by qualifier, and the `BffAuth` plugin;
@@ -122,10 +122,10 @@ New production code is written without `android.*`, `java.*` or `javax.*` import
 
 ## 4. Integration verification
 
-- [ ] 4.1 Run `./gradlew ktlintFormat`, then `./gradlew ktlintCheck`. Verify: it passes for both modules.
-- [ ] 4.2 Run `./gradlew test` and `./gradlew :shared:iosSimulatorArm64Test`. Verify: all pass. The JVM test total across `:app` and `:shared` must be at least the 249 from before the change (220 + 29), plus the tests added in 1.4, 2.6 and 3.3. The iOS count must be above the earlier 21.
-- [ ] 4.3 Run `./gradlew assembleDebug`. Verify: it builds.
-- [ ] 4.4 Upgrade-install on the Galaxy S10 (`adb -s RZ8M22J5NBB install -r`) and check, while signed in:
+- [x] 4.1 Run `./gradlew ktlintFormat`, then `./gradlew ktlintCheck`. Verify: it passes for both modules.
+- [x] 4.2 Run `./gradlew test` and `./gradlew :shared:iosSimulatorArm64Test`. Verify: all pass. The JVM test total across `:app` and `:shared` must be at least the 249 from before the change (220 + 29), plus the tests added in 1.4, 2.6 and 3.3. The iOS count must be above the earlier 21.
+- [x] 4.3 Run `./gradlew assembleDebug`. Verify: it builds.
+- [x] 4.4 Upgrade-install on the Galaxy S10 (`adb -s RZ8M22J5NBB install -r`) and check, while signed in:
   - Home shows all four rails;
   - search returns results;
   - Movie Detail shows cast and the production-country sheet;
