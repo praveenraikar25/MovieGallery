@@ -23,7 +23,7 @@ Structure the application into three primary layers. Dependencies must strictly 
     *   **Dependencies**: Depends on Repository Interfaces.
 *   **Data Layer**:
     *   **Responsibility**: Managing application data (fetching, caching, saving).
-    *   **Components**: Repositories (implementations), Data Sources (Retrofit APIs, the Apollo GraphQL client, Room DAOs). Generated Apollo models stay in the data layer and are mapped to domain models there.
+    *   **Components**: Repositories (implementations), Data Sources (Ktor HTTP APIs, the Apollo GraphQL client, Room DAOs). Generated Apollo models stay in the data layer and are mapped to domain models there.
     *   **Dependencies**: Depends only on external sources and libraries.
     *   **Local persistence**: Room 3 (`androidx.room3`). Persisted data uses Room as the single source of truth — DAOs expose `Flow` for reads and suspend functions for writes, and a check-then-write runs in one `@Transaction`. Export schemas (`shared/schemas/`), commit them, and add a `Migration` per version bump instead of a destructive fallback. Per-account data is keyed by the signed-in user's id.
 
@@ -43,8 +43,8 @@ For production apps, use a multi-module strategy to improve build times and sepa
 
 **This project today** is moving to Kotlin Multiplatform for an iOS app:
 
-*   **:shared** (KMP library: Android, `iosArm64`, `iosSimulatorArm64`): the domain layer, plus the data code that needs only multiplatform libraries (DTOs, mappers, Room, Apollo, and the repositories built on them). `commonMain` has no `android.*`, `java.*` or `javax.*` imports; platform differences go through `expect`/`actual` in `androidMain`/`iosMain`.
-*   **:app** (Android application): UI, Hilt modules, and data code still tied to Android or the JVM (Retrofit/OkHttp, Firebase). It moves into `:shared` as multiplatform replacements land.
+*   **:shared** (KMP library: Android, `iosArm64`, `iosSimulatorArm64`): the domain layer, plus the data code that needs only multiplatform libraries (DTOs, mappers, Room, Apollo, the Ktor clients and APIs, and the repositories built on them; `:app` passes in the engine and anything from `BuildConfig`). `commonMain` has no `android.*`, `java.*` or `javax.*` imports; platform differences go through `expect`/`actual` in `androidMain`/`iosMain`.
+*   **:app** (Android application): UI, Hilt modules, and data code still tied to Android or the JVM (Firebase Auth and AI, and the OkHttp base client the Ktor engine, Coil and Apollo share). It moves into `:shared` as multiplatform replacements land.
 
 The target layout below is the direction for splitting further, not the current state:
 

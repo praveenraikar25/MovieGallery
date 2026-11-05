@@ -1,34 +1,39 @@
 package com.raikar.moviegallery.data.repository
 
-import com.raikar.moviegallery.data.remote.auth.MissingAuthTokenException
 import com.raikar.moviegallery.domain.model.AppError
 import com.raikar.moviegallery.domain.model.DataResult
+import com.raikar.moviegallery.testutil.FakeAuthTokenProvider
+import com.raikar.moviegallery.testutil.asTvShowListJson
+import com.raikar.moviegallery.testutil.bffApi
+import com.raikar.moviegallery.testutil.fakeHttpServer
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.ResponseBody.Companion.toResponseBody
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
-import retrofit2.HttpException
-import retrofit2.Response
-import java.io.IOException
+import kotlin.test.AfterTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TvShowRepositoryImplTest {
-    private val api = FakeBffApi()
+    private val server = fakeHttpServer()
 
-    private fun repository() = TvShowRepositoryImpl(api, UnconfinedTestDispatcher())
+    /** On the test's own scheduler: a dispatcher with a scheduler of its own is never advanced. */
+    private fun TestScope.repository(tokenProvider: FakeAuthTokenProvider = FakeAuthTokenProvider()) =
+        TvShowRepositoryImpl(bffApi(server, tokenProvider), UnconfinedTestDispatcher(testScheduler))
+
+    @AfterTest
+    fun tearDown() = server.close()
 
     @Test
     fun `a successful call maps the response into a TvShowPage`() =
         runTest {
-            api.topTvShowsResponse = { page -> listOf(1, 2, 3).asTvShowResponse(page = page, totalPages = 5) }
+            server.enqueue(200, listOf(1, 2, 3).asTvShowListJson(page = 1, totalPages = 5))
 
             val result = repository().topTvShows(page = 1)
 
-            assertTrue(result is DataResult.Success)
+            assertIs<DataResult.Success<*>>(result)
             val page = (result as DataResult.Success).data
             assertEquals(1, page.page)
             assertEquals(5, page.totalPages)
@@ -38,23 +43,17 @@ class TvShowRepositoryImplTest {
     @Test
     fun `requests the given page`() =
         runTest {
-            var requestedPage: Int? = null
-            api.topTvShowsResponse = { page ->
-                requestedPage = page
-                listOf(1).asTvShowResponse(page = page)
-            }
+            server.enqueue(200, listOf(1).asTvShowListJson(page = 3))
 
             repository().topTvShows(page = 3)
 
-            assertEquals(3, requestedPage)
+            assertEquals("3", server.takeRequest().queryParameter("page"))
         }
 
     @Test
     fun `an HTTP error surfaces through safeApiCall as a Failure`() =
         runTest {
-            api.topTvShowsResponse = {
-                throw HttpException(Response.error<Unit>(500, "".toResponseBody("application/json".toMediaType())))
-            }
+            server.enqueue(500)
 
             val result = repository().topTvShows(page = 1)
 
@@ -64,7 +63,7 @@ class TvShowRepositoryImplTest {
     @Test
     fun `a network failure surfaces as Network`() =
         runTest {
-            api.topTvShowsResponse = { throw IOException("offline") }
+            server.failConnections()
 
             val result = repository().topTvShows(page = 1)
 
@@ -74,9 +73,9 @@ class TvShowRepositoryImplTest {
     @Test
     fun `a rejected token surfaces as AuthRequired`() =
         runTest {
-            api.topTvShowsResponse = {
-                throw HttpException(Response.error<Unit>(401, "".toResponseBody("application/json".toMediaType())))
-            }
+            // Rejected, then rejected again after the one refresh retry.
+            server.enqueue(401)
+            server.enqueue(401)
 
             val result = repository().topTvShows(page = 1)
 
@@ -86,9 +85,7 @@ class TvShowRepositoryImplTest {
     @Test
     fun `a missing token surfaces as AuthRequired`() =
         runTest {
-            api.topTvShowsResponse = { throw MissingAuthTokenException() }
-
-            val result = repository().topTvShows(page = 1)
+            val result = repository(FakeAuthTokenProvider(cached = null)).topTvShows(page = 1)
 
             assertEquals(DataResult.Failure(AppError.AuthRequired), result)
         }

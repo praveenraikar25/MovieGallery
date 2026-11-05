@@ -2,7 +2,11 @@ package com.raikar.moviegallery.di
 
 import com.apollographql.apollo.ApolloClient
 import com.raikar.moviegallery.data.local.WatchlistDao
+import com.raikar.moviegallery.data.remote.BffApi
+import com.raikar.moviegallery.data.remote.TmdbApi
 import com.raikar.moviegallery.data.repository.CountryRepositoryImpl
+import com.raikar.moviegallery.data.repository.MovieRepositoryImpl
+import com.raikar.moviegallery.data.repository.TvShowRepositoryImpl
 import com.raikar.moviegallery.data.repository.WatchlistRepositoryImpl
 import com.raikar.moviegallery.di.qualifier.IoDispatcher
 import com.raikar.moviegallery.domain.repository.AiChatRepository
@@ -50,6 +54,20 @@ object SharedModule {
         apollo: ApolloClient,
         @IoDispatcher ioDispatcher: CoroutineDispatcher,
     ): CountryRepository = CountryRepositoryImpl(apollo, ioDispatcher)
+
+    @Provides
+    @Singleton
+    fun provideMovieRepository(
+        api: TmdbApi,
+        @IoDispatcher ioDispatcher: CoroutineDispatcher,
+    ): MovieRepository = MovieRepositoryImpl(api, ioDispatcher)
+
+    @Provides
+    @Singleton
+    fun provideTvShowRepository(
+        api: BffApi,
+        @IoDispatcher ioDispatcher: CoroutineDispatcher,
+    ): TvShowRepository = TvShowRepositoryImpl(api, ioDispatcher)
 
     @Provides
     @Singleton

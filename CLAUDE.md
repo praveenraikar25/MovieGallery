@@ -9,7 +9,7 @@ Always use the latest stable Android tech stack. Concretely:
 - **Kotlin & AGP**: target the latest stable Kotlin and Android Gradle Plugin versions. `gradle/libs.versions.toml` is the single source of truth for all dependency/plugin versions — add new versions there, don't hardcode them in module `build.gradle.kts` files.
 - **UI**: Jetpack Compose with Material 3 for all UI. Do not add new XML layouts or View-based Activities/Fragments.
 - **DI**: Hilt (`@HiltAndroidApp`, `@AndroidEntryPoint`, `@HiltViewModel`, `@Module`/`@InstallIn`).
-- **Networking/async**: Retrofit for REST calls, Apollo Kotlin for GraphQL, Kotlin Coroutines/Flow for async data. Repositories expose main-safe suspend functions / `Flow`; ViewModels expose `StateFlow`.
+- **Networking/async**: Ktor for REST calls (OkHttp engine on Android, Darwin on iOS), Apollo Kotlin for GraphQL, Kotlin Coroutines/Flow for async data. Repositories expose main-safe suspend functions / `Flow`; ViewModels expose `StateFlow`.
 - **Persistence**: Room 3 (`androidx.room3`, not Room 2's `androidx.room`) for on-device data. DAOs return `Flow` / suspend; schemas are exported to `shared/schemas/` and committed, and there is no destructive fallback — a schema change needs a real `Migration`.
 - **Dependencies**: when adding any new library, use its latest stable release and add it via the version catalog.
 
@@ -38,7 +38,7 @@ For layering and module structure (Clean Architecture: UI / Domain / Data, multi
 
 ## Backends
 
-`NetworkModule` provides two separate Retrofit stacks selected by qualifier: `@TmdbClient` (`TmdbApi`, movies, bearer-token auth) and `@BffClient` (`BffApi`, TV shows, a separate demo host with its own OkHttp client). New endpoints must pick the right qualifier; Retrofit base URLs need a trailing slash. Authentication is a third, non-Retrofit backend: Firebase Auth, reached through `AuthRepository` and mapped to `AuthError` by `safeAuthCall` (`data/remote/auth/`). The Google ID token comes from Credential Manager in the UI layer (`ui/screens/login/GoogleSignIn.kt`) because it needs an Activity; only the token string crosses into the repository.
+`NetworkModule` provides two Ktor `HttpClient`s selected by qualifier, both on the OkHttp engine over the shared base `OkHttpClient`: `@TmdbClient` (`TmdbApi`, movies, bearer-token auth) and `@BffClient` (`BffApi`, TV shows, a separate demo host). They are built by `createTmdbHttpClient` / `createBffHttpClient` (`:shared` `data/remote/HttpClients.kt`), which take the token, app version and log level as parameters instead of reading `BuildConfig`. The BFF client installs the `BffAuth` plugin (`data/remote/auth/`): a fresh Firebase ID token on every request, no request without one, and one force-refreshed retry on a 401 from the BFF host. New endpoints must pick the right client; base URLs need a trailing slash and request paths have no leading slash. Wrap calls in `safeApiCall`, which maps Ktor failures to `AppError`s. Authentication is a third, non-HTTP-client backend: Firebase Auth, reached through `AuthRepository` and mapped to `AuthError` by `safeAuthCall` (`data/remote/auth/`). The Google ID token comes from Credential Manager in the UI layer (`ui/screens/login/GoogleSignIn.kt`) because it needs an Activity; only the token string crosses into the repository.
 
 The fourth backend is GraphQL: the public, unauthenticated Countries API, reached through the single `ApolloClient` in `GraphQlModule` (derived from the shared base `OkHttpClient`; no qualifier while it is the only Apollo client). Its schema and `.graphql` operations live in `shared/src/commonMain/graphql/countries/`, and Apollo generates typed models into `data/remote/graphql/countries` at build time — they stay in the data layer. Apollo returns failures on the response instead of throwing, so wrap calls in `safeGraphQlCall`, which maps them to the same `AppError`s as `safeApiCall`. `CountryRepository` backs the production-country details sheet on Movie Detail.
 
@@ -46,8 +46,8 @@ The fourth backend is GraphQL: the public, unauthenticated Countries API, reache
 
 Source lives in two modules, with the same `com.raikar.moviegallery.*` packages in both:
 
-- `:shared` — `shared/src/commonMain/kotlin/com/raikar/moviegallery/` (per-platform `actual`s in `androidMain/` and `iosMain/`): all of `domain/`; from `data/`, the DTOs and mappers, `TmdbGenres`/`TmdbImages`, `local/` (Room), the Countries GraphQL code, and the watchlist and country repositories. Tests: `shared/src/commonTest/` (plain Kotlin, `kotlin.test`, runs on JVM and iOS) and `shared/src/androidHostTest/` (JVM-only).
-- `:app` — `app/src/main/java/com/raikar/moviegallery/`: all UI, `di/`, and the data code still tied to the JVM or Android — Retrofit APIs and `SafeApiCall`, `auth/`, `ai/`, and the movie, TV-show, auth and AI repositories. Tests needing Robolectric, MockWebServer, MockK or classpath JSON fixtures stay in `app/src/test/`.
+- `:shared` — `shared/src/commonMain/kotlin/com/raikar/moviegallery/` (per-platform `actual`s in `androidMain/` and `iosMain/`): all of `domain/`; from `data/`, the DTOs and mappers, `TmdbGenres`/`TmdbImages`, `local/` (Room), the Countries GraphQL code, the Ktor networking (`TmdbApi`, `BffApi`, the client factories, `BffAuth`, `safeApiCall`), and the movie, TV-show, watchlist and country repositories. Tests: `shared/src/commonTest/` (plain Kotlin, `kotlin.test`, runs on JVM and iOS; network tests use the `MockEngine`-backed `FakeHttpServer` and `testutil/TestBackends.kt`, with JSON fixtures as strings in `data/remote/TestFixtures.kt`) and the JVM-only `androidHostTest/` and iOS-only `iosTest/` (each with a real-engine `RealEngineNetworkErrorTest`).
+- `:app` — `app/src/main/java/com/raikar/moviegallery/`: all UI, `di/`, and the data code still tied to the JVM or Android — `auth/` (Firebase Auth), `ai/`, and the auth and AI repositories. Tests needing Robolectric, MockWebServer, MockK or classpath JSON fixtures stay in `app/src/test/`.
 
 The per-package map below applies across both modules:
 
@@ -58,10 +58,10 @@ The per-package map below applies across both modules:
 - `domain/model/` — plain data classes shared across layers.
 - `domain/repository/` — repository interfaces (`<Thing>Repository`), implemented in `data/repository/`.
 - `domain/usecase/` — one class per use case, invoked from a ViewModel; wraps a repository call.
-- `data/remote/` — `auth/` (`safeAuthCall`, Firebase Auth error mapping), `TmdbApi.kt` (Retrofit service), `dto/` (network DTOs), `MovieMappers.kt` (DTO → domain mapping), `SafeApiCall.kt` (network error wrapping), `ai/` (Firebase AI client), `SafeGraphQlCall.kt` + `CountryMappers.kt` (GraphQL error wrapping and Apollo model → domain mapping; generated Apollo code lands in `graphql/countries`).
+- `data/remote/` — `auth/` (`safeAuthCall`, Firebase Auth error mapping), `TmdbApi.kt` / `BffApi.kt` (Ktor calls), `HttpClients.kt` (client factories, `networkJson`), `dto/` (network DTOs), `MovieMappers.kt` (DTO → domain mapping), `SafeApiCall.kt` (network error wrapping), `ai/` (Firebase AI client), `SafeGraphQlCall.kt` + `CountryMappers.kt` (GraphQL error wrapping and Apollo model → domain mapping; generated Apollo code lands in `graphql/countries`).
 - `data/repository/` — repository implementations (`<Thing>RepositoryImpl.kt`), or a static/in-memory impl where there's no backing API yet. Shared ones (`WatchlistRepositoryImpl`, `CountryRepositoryImpl`) take plain constructor params, with no annotations.
 - `data/local/` — the Room database (`MovieGalleryDatabase`), its DAOs, entities, column converters and entity ↔ domain mappers. The watchlist lives here, keyed by the signed-in account's Firebase uid.
-- `di/` — Hilt modules: `NetworkModule` (Retrofit/OkHttp), `RepositoryModule` (`@Binds` interface → impl), `DispatchersModule`, `AiModule`, `GraphQlModule` (`ApolloClient`), `DatabaseModule` (Room database + DAOs), `ClockModule` (`kotlin.time.Clock`, injected so tests control timestamps), `SharedModule` (`@Provides` for every `:shared` class Hilt hands out: use cases and shared repositories — `commonMain` can't use `@Inject`). `di/qualifier/` holds `@Qualifier` annotations.
+- `di/` — Hilt modules: `NetworkModule` (base `OkHttpClient`, the two Ktor `HttpClient`s and APIs, Coil `ImageLoader`), `RepositoryModule` (`@Binds` interface → impl), `DispatchersModule`, `AiModule`, `GraphQlModule` (`ApolloClient`), `DatabaseModule` (Room database + DAOs), `ClockModule` (`kotlin.time.Clock`, injected so tests control timestamps), `SharedModule` (`@Provides` for every `:shared` class Hilt hands out: use cases and shared repositories — `commonMain` can't use `@Inject`). `di/qualifier/` holds `@Qualifier` annotations.
 
 ## Adding a feature screen
 
@@ -69,7 +69,7 @@ Touch these in order:
 
 1. `domain/model/` (`:shared` `commonMain`) — add/extend the domain model if needed.
 2. `domain/repository/<Thing>Repository.kt` (`:shared`) — interface with suspend/`Flow` methods.
-3. `data/repository/<Thing>RepositoryImpl.kt` — implementation (or a static impl if there's no API yet). In `:shared` if it only needs multiplatform libraries; in `:app` if it needs Retrofit, Firebase or Android APIs.
+3. `data/repository/<Thing>RepositoryImpl.kt` — implementation (or a static impl if there's no API yet). In `:shared` if it only needs multiplatform libraries; in `:app` if it needs Firebase or Android APIs.
 4. `:app` `di/` — `@Binds` it in `RepositoryModule.kt` for an `:app` impl (`@Inject` constructor), or add a `@Provides @Singleton` to `SharedModule.kt` for a `:shared` impl.
 5. `domain/usecase/` (`:shared`) — one use case class wrapping the repository call the screen needs, with no annotations, plus a `@Provides` for it in `SharedModule.kt`.
 6. `ui/screens/<feature>/` — `<Feature>UiState.kt`, `<Feature>ViewModel.kt` (`@HiltViewModel`, injects the use case, exposes `StateFlow<UiState>`), `<Feature>Screen.kt` (Compose UI, `hiltViewModel()`).
@@ -81,10 +81,10 @@ Touch these in order:
 ## Adding a TMDB endpoint
 
 1. `data/remote/dto/` (`:shared`) — response DTO(s) matching the TMDB JSON shape.
-2. `data/remote/TmdbApi.kt` (`:app`) — new `@GET`/`@POST` method.
-3. `data/remote/MovieMappers.kt` (`:shared`) — DTO → domain model mapping function. Public for now (marked `TEMP`), because the Retrofit repositories in `:app` call it.
-4. `domain/repository/` (`:shared`) + `data/repository/...Impl.kt` (`:app`) — expose the call through the repository layer (wrap with `SafeApiCall`).
-5. `app/src/test/java/.../data/remote/` — add a fixture + test (see `Fixtures.kt`, `FakeTmdbApi.kt` for patterns).
+2. `data/remote/TmdbApi.kt` (`:shared`) — new method: `client.get("path") { parameter(...) }.decode()`.
+3. `data/remote/MovieMappers.kt` (`:shared`) — `internal` DTO → domain model mapping function.
+4. `domain/repository/` + `data/repository/...Impl.kt` (both `:shared`) — expose the call through the repository layer (wrap with `safeApiCall`).
+5. `shared/src/commonTest/.../data/remote/` — add a fixture string to `TestFixtures.kt` and a test against `FakeHttpServer` (see `TmdbApiTest.kt`).
 
 ## Adding a GraphQL query
 

@@ -1,10 +1,10 @@
 package com.raikar.moviegallery.data.remote
 
 import com.raikar.moviegallery.data.remote.dto.TvShowListResponseDto
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class TvShowMappersTest {
     private fun topShows(): TvShowListResponseDto = testJson.decodeFromString(fixture("tv_show_list_top.json"))

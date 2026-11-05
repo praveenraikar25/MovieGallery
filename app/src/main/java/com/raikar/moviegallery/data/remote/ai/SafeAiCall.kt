@@ -14,7 +14,7 @@ import com.google.firebase.ai.type.SerializationException as FirebaseAiSerializa
  * The Firebase AI counterpart to [com.raikar.moviegallery.data.remote.safeApiCall].
  *
  * A separate function rather than a shared one because `safeApiCall` keys off
- * Retrofit's `HttpException`, which Gemini calls never throw — they throw
+ * Ktor's `ResponseException`, which Gemini calls never throw — they throw
  * `FirebaseAIException` subclasses, and those carry no HTTP status code, so
  * [AppError.Http] is not reachable from here.
  *

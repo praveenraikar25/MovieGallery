@@ -34,13 +34,13 @@ rules:
     - Mark accepted placeholder behavior or known gaps with a "> Note:" line; when a change resolves one, the MODIFIED requirement drops that note.
   design:
     - Follow the layering in CLAUDE.md and .claude/skills/android-architecture/SKILL.md (UI -> domain use case -> repository interface -> data impl); the domain layer stays free of android.* imports.
-    - For TMDB or BFF calls, name the Retrofit stack (@TmdbClient or @BffClient) and map failures to DataResult/AppError via safeApiCall.
-    - For Firebase AI calls, go through the Firebase AI client (no Retrofit stack) and map failures via safeAiCall.
+    - For TMDB or BFF calls, name the HTTP client (@TmdbClient or @BffClient) and map failures to DataResult/AppError via safeApiCall.
+    - For Firebase AI calls, go through the Firebase AI client (no Ktor client) and map failures via safeAiCall.
     - New or upgraded dependencies use their latest stable release and are declared in gradle/libs.versions.toml only.
     - UI is Jetpack Compose with Material 3; no XML layouts or View-based screens.
   tasks:
     - Order tasks along the matching CLAUDE.md checklist ("Adding a feature screen" or "Adding a TMDB endpoint").
-    - Every spec scenario maps to at least one JVM unit test (ViewModel tests use fakes from app/src/test/.../testutil; API/mapper tests use Fixtures.kt and the fake APIs). No instrumented tests.
+    - Every spec scenario maps to at least one JVM unit test (ViewModel tests use fakes from app/src/test/.../testutil; TMDB and BFF API/repository/mapper tests use the FakeHttpServer harness and TestFixtures.kt in shared/src/commonTest; Countries GraphQL tests follow the "Adding a GraphQL query" checklist in CLAUDE.md). No instrumented tests.
     - End with verification tasks that run ./gradlew ktlintCheck, ./gradlew test and ./gradlew assembleDebug.
 
 operations:

@@ -7,8 +7,8 @@ import coil3.request.crossfade
 import com.raikar.moviegallery.BuildConfig
 import com.raikar.moviegallery.data.remote.BffApi
 import com.raikar.moviegallery.data.remote.TmdbApi
-import com.raikar.moviegallery.data.remote.auth.BffAuthInterceptor
-import com.raikar.moviegallery.data.remote.auth.BffTokenAuthenticator
+import com.raikar.moviegallery.data.remote.createBffHttpClient
+import com.raikar.moviegallery.data.remote.createTmdbHttpClient
 import com.raikar.moviegallery.di.qualifier.BffClient
 import com.raikar.moviegallery.di.qualifier.TmdbClient
 import com.raikar.moviegallery.domain.repository.AuthTokenProvider
@@ -17,12 +17,13 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.logging.ANDROID
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
 import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
@@ -31,21 +32,10 @@ import javax.inject.Singleton
 object NetworkModule {
     private const val TIMEOUT_SECONDS = 15L
 
-    @Provides
-    @Singleton
-    fun provideJson(): Json =
-        Json {
-            // TMDB adds fields over time and returns endpoint-specific extras such as
-            // the `dates` object on now_playing/upcoming.
-            ignoreUnknownKeys = true
-            // Turns an explicit JSON null into the property's declared default.
-            coerceInputValues = true
-        }
-
     /**
-     * Unauthenticated client, safe to share with Coil. Interceptors apply to every
-     * request regardless of host, so a client carrying the TMDB bearer token would
-     * leak that token to image.tmdb.org on every poster fetch.
+     * Unauthenticated client, shared by Coil, Apollo and the Ktor engines. It carries no
+     * interceptors: a client carrying the TMDB bearer token would leak that token to
+     * image.tmdb.org on every poster fetch. Ktor adds each backend's headers per client.
      */
     @Provides
     @Singleton
@@ -57,106 +47,59 @@ object NetworkModule {
             .build()
 
     /**
-     * Derived with [OkHttpClient.newBuilder] so it shares the base client's
-     * connection pool and dispatcher.
+     * Headers and bodies in debug builds (Ktor's `ALL`, what OkHttp's `BODY` level logged), nothing in
+     * release. Ktor redacts `Authorization` at every level.
      */
+    private val logLevel: LogLevel get() = if (BuildConfig.DEBUG) LogLevel.ALL else LogLevel.NONE
+
+    /**
+     * Each Ktor client gets its own engine, but every engine wraps the base client, so they all share
+     * its connection pool and dispatcher.
+     */
+    private fun engineOn(base: OkHttpClient): HttpClientEngine = OkHttp.create { preconfigured = base }
+
     @Provides
     @Singleton
     @TmdbClient
-    fun provideTmdbOkHttpClient(base: OkHttpClient): OkHttpClient =
-        base
-            .newBuilder()
-            .addInterceptor { chain ->
-                chain.proceed(
-                    chain
-                        .request()
-                        .newBuilder()
-                        .header("Authorization", "Bearer ${BuildConfig.TMDB_READ_ACCESS_TOKEN}")
-                        .header("Accept", "application/json")
-                        .build(),
-                )
-            }.addInterceptor(
-                HttpLoggingInterceptor().apply {
-                    level =
-                        if (BuildConfig.DEBUG) {
-                            HttpLoggingInterceptor.Level.BODY
-                        } else {
-                            HttpLoggingInterceptor.Level.NONE
-                        }
-                    // Never print the token, even at BODY level.
-                    redactHeader("Authorization")
-                },
-            ).build()
+    fun provideTmdbHttpClient(base: OkHttpClient): HttpClient =
+        createTmdbHttpClient(
+            engine = engineOn(base),
+            accessToken = BuildConfig.TMDB_READ_ACCESS_TOKEN,
+            logLevel = logLevel,
+            logger = Logger.ANDROID,
+        )
 
     @Provides
     @Singleton
-    fun provideRetrofit(
-        @TmdbClient client: OkHttpClient,
-        json: Json,
-    ): Retrofit =
-        Retrofit
-            .Builder()
-            .baseUrl(TmdbApi.BASE_URL)
-            .client(client)
-            .addConverterFactory(json.asConverterFactory("application/json; charset=utf-8".toMediaType()))
-            .build()
-
-    @Provides
-    @Singleton
-    fun provideTmdbApi(retrofit: Retrofit): TmdbApi = retrofit.create(TmdbApi::class.java)
+    fun provideTmdbApi(
+        @TmdbClient client: HttpClient,
+    ): TmdbApi = TmdbApi(client)
 
     /**
-     * Derived from the shared base client. The BFF verifies the signed-in user's Firebase ID
-     * token (`Authorization: Bearer`) and rejects requests without it, so the token is added
-     * here, with one forced-refresh retry on a 401. The app version code goes in `X-APP-VERSION`.
+     * The BFF verifies the signed-in user's Firebase ID token (`Authorization: Bearer`) and rejects
+     * requests without it; the client adds it, with one forced-refresh retry on a 401. The app
+     * version code goes in `X-APP-VERSION`.
      */
     @Provides
     @Singleton
     @BffClient
-    fun provideBffOkHttpClient(
+    fun provideBffHttpClient(
         base: OkHttpClient,
         tokenProvider: AuthTokenProvider,
-    ): OkHttpClient =
-        base
-            .newBuilder()
-            .addInterceptor { chain ->
-                chain.proceed(
-                    chain
-                        .request()
-                        .newBuilder()
-                        .header("X-APP-VERSION", BuildConfig.VERSION_CODE.toString())
-                        .build(),
-                )
-            }.addInterceptor(BffAuthInterceptor(tokenProvider))
-            .authenticator(BffTokenAuthenticator(tokenProvider))
-            .addInterceptor(
-                HttpLoggingInterceptor().apply {
-                    level =
-                        if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
-                    // Never print the user's ID token, even at BODY level.
-                    redactHeader("Authorization")
-                },
-            ).build()
-
-    @Provides
-    @Singleton
-    @BffClient
-    fun provideBffRetrofit(
-        @BffClient client: OkHttpClient,
-        json: Json,
-    ): Retrofit =
-        Retrofit
-            .Builder()
-            .baseUrl(BffApi.BASE_URL)
-            .client(client)
-            .addConverterFactory(json.asConverterFactory("application/json; charset=utf-8".toMediaType()))
-            .build()
+    ): HttpClient =
+        createBffHttpClient(
+            engine = engineOn(base),
+            tokenProvider = tokenProvider,
+            appVersion = BuildConfig.VERSION_CODE.toString(),
+            logLevel = logLevel,
+            logger = Logger.ANDROID,
+        )
 
     @Provides
     @Singleton
     fun provideBffApi(
-        @BffClient retrofit: Retrofit,
-    ): BffApi = retrofit.create(BffApi::class.java)
+        @BffClient client: HttpClient,
+    ): BffApi = BffApi(client)
 
     /** Uses the unauthenticated client; posters need no credentials. */
     @Provides
