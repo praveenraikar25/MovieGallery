@@ -29,7 +29,10 @@ interface FakeHttpServer : AutoCloseable {
         path: String? = null,
     )
 
-    /** Makes every request to [path] (or to any path without a plan) fail at the connection. */
+    /**
+     * Makes requests to [path] (or, with no [path], to any path) fail at the connection whenever no
+     * response is queued for them. Queued responses still win, including ones enqueued after this call.
+     */
     fun failConnections(path: String? = null)
 
     /** The oldest request not yet taken, in arrival order. */

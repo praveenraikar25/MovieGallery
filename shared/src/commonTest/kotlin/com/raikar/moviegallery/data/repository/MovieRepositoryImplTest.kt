@@ -41,9 +41,15 @@ class MovieRepositoryImplTest {
             val result = repository().getSections()
 
             assertIs<DataResult.Success<*>>(result)
+            assertEquals(SECTION_PATHS.size, server.requestCount)
             assertEquals(
                 listOf("Trending Now", "Now Playing", "Top Rated", "Coming Soon"),
                 (result as DataResult.Success).data.map { it.title },
+            )
+            // Ids follow enqueueAllSections, so a swapped endpoint fails here even with the titles in order.
+            assertEquals(
+                listOf(listOf(1), listOf(3), listOf(2), listOf(4)),
+                result.data.map { section -> section.movies.map { it.id } },
             )
         }
 
@@ -56,6 +62,7 @@ class MovieRepositoryImplTest {
             val result = repository().getSections()
 
             val sections = (result as DataResult.Success).data
+            assertEquals(SECTION_PATHS.size, server.requestCount)
             assertEquals(listOf("Trending Now", "Now Playing", "Top Rated"), sections.map { it.title })
         }
 
@@ -67,6 +74,7 @@ class MovieRepositoryImplTest {
 
             val sections = (repository().getSections() as DataResult.Success).data
 
+            assertEquals(SECTION_PATHS.size, server.requestCount)
             assertTrue(sections.none { it.title == "Trending Now" })
             assertEquals(3, sections.size)
         }
@@ -78,6 +86,7 @@ class MovieRepositoryImplTest {
 
             val result = repository().getSections()
 
+            assertEquals(SECTION_PATHS.size, server.requestCount)
             assertEquals(DataResult.Failure(AppError.Network), result)
         }
 
@@ -90,6 +99,7 @@ class MovieRepositoryImplTest {
                 DataResult.Failure(AppError.Unauthorized),
                 repository().getSections(),
             )
+            assertEquals(SECTION_PATHS.size, server.requestCount)
         }
 
     @Test
