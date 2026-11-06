@@ -22,7 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.raikar.moviegallery.ui.components.AppIcons
 import com.raikar.moviegallery.ui.components.PosterGridCard
@@ -30,11 +29,12 @@ import com.raikar.moviegallery.ui.components.WatchlistBookmarkBadge
 import com.raikar.moviegallery.ui.components.toPosterGridItem
 import com.raikar.moviegallery.ui.theme.Sizes
 import com.raikar.moviegallery.ui.theme.movieColors
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun WatchlistScreen(
     onMovieClick: (Int) -> Unit,
-    viewModel: WatchlistViewModel = hiltViewModel(),
+    viewModel: WatchlistViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 

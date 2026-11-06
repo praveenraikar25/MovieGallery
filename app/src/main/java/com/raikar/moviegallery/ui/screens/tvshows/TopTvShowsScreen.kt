@@ -30,7 +30,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.raikar.moviegallery.ui.components.AppButton
 import com.raikar.moviegallery.ui.components.ButtonVariant
@@ -41,6 +40,7 @@ import com.raikar.moviegallery.ui.components.toPosterGridItem
 import com.raikar.moviegallery.ui.theme.Sizes
 import com.raikar.moviegallery.ui.theme.movieColors
 import kotlinx.coroutines.flow.distinctUntilChanged
+import org.koin.compose.viewmodel.koinViewModel
 
 /** Trigger the next page this many items before the end of what's loaded. */
 private const val PREFETCH_THRESHOLD = 6
@@ -48,7 +48,7 @@ private const val PREFETCH_THRESHOLD = 6
 @Composable
 fun TopTvShowsScreen(
     onBack: () -> Unit,
-    viewModel: TopTvShowsViewModel = hiltViewModel(),
+    viewModel: TopTvShowsViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val gridState = rememberLazyGridState()

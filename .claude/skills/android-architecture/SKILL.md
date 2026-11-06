@@ -1,6 +1,6 @@
 ---
 name: android-architecture
-description: Expert guidance on setting up and maintaining a modern Android application architecture using Clean Architecture and Hilt. Use this when asked about project structure, module setup, or dependency injection.
+description: Expert guidance on setting up and maintaining a modern Android application architecture using Clean Architecture and Koin. Use this when asked about project structure, module setup, or dependency injection.
 ---
 
 # Android Modern Architecture & Modularization
@@ -27,16 +27,19 @@ Structure the application into three primary layers. Dependencies must strictly 
     *   **Dependencies**: Depends only on external sources and libraries.
     *   **Local persistence**: Room 3 (`androidx.room3`). Persisted data uses Room as the single source of truth — DAOs expose `Flow` for reads and suspend functions for writes, and a check-then-write runs in one `@Transaction`. Export schemas (`shared/schemas/`), commit them, and add a `Migration` per version bump instead of a destructive fallback. Per-account data is keyed by the signed-in user's id.
 
-### 2. Dependency Injection with Hilt
-Use **Hilt** for all dependency injection.
+### 2. Dependency Injection with Koin
+Use **Koin** for all dependency injection, with the **plain DSL only**: no Koin annotations and no Koin compiler plugin, so Kotlin upgrades never wait on a DI release. Classes carry no DI annotations at all; they declare dependencies as ordinary constructor parameters.
 
-*   **@HiltAndroidApp**: Annotate the `Application` class.
-*   **@AndroidEntryPoint**: Annotate Activities and Fragments.
-*   **@HiltViewModel**: Annotate ViewModels; use standard `constructor` injection.
-*   **Modules**:
-    *   Use `@Module` and `@InstallIn(SingletonComponent::class)` for app-wide singletons (e.g., Network, Database).
-    *   Use `@Binds` in an abstract class to bind interface implementations (cleaner than `@Provides`).
-    *   **Classes in `:shared` are the exception**: multiplatform common code can't use `javax.inject`, so they carry no annotations and `:app`'s `di/SharedModule.kt` builds them with `@Provides` (`@Singleton` for repositories). This lasts until DI moves to a multiplatform library.
+*   **Where definitions live**: anything buildable from multiplatform code is declared in `:shared` `commonMain` `di/SharedModules.kt` (`networkModule`, `dataModule`, `domainModule`, collected in `sharedModules`). `:app` `di/` supplies only what is Android-, Firebase- or `BuildConfig`-specific (`androidPlatformModule`, `aiModule`, `viewModelModule`, collected in `androidModules`). The KDoc on `sharedModules` lists what every platform must supply; keep it current.
+*   **Lifetimes**: app-wide objects (repositories, clients, database, Firebase) are `single`; cheap wrappers (use cases, the DAO, the clock, the dispatcher) are `factory`. The `HttpClientEngine` is a `factory` so each Ktor client gets its own engine.
+*   **Definitions**: `singleOf(::Impl) bind Interface::class` / `factoryOf(::X)` / `viewModelOf(::X)` when no parameter needs a qualifier; an explicit lambda (`single<I> { Impl(get(), get(IoDispatcher)) }`) when one does.
+*   **Qualifiers**: the `TmdbClient`, `BffClient` and `IoDispatcher` constants in `:shared` `di/Qualifiers.kt`. Always use the constants, never raw `named("...")` strings.
+*   **ViewModels**: resolve with `koinViewModel()` (`org.koin.compose.viewmodel`), which scopes to the current `LocalViewModelStoreOwner`. `SavedStateHandle` is a plain constructor parameter, filled from the navigation entry. `AppSessionViewModel` must be resolved outside the `NavHost` so the activity owns it.
+*   **Startup**: `MovieGalleryApplication.onCreate` calls `startKoin { androidContext(...); modules(sharedModules + androidModules) }`.
+*   **Graph tests**: Koin resolves at runtime, so three tests stand in for a compile-time graph check. Keep them passing and extend them with new bindings:
+    *   `KoinGraphTest` runs `verify()` over constructor parameters.
+    *   `KoinGraphResolutionTest` (Robolectric) resolves every use case against the real graph, which catches `get()` calls inside lambdas that `verify()` can't see. Add each new use case to its list.
+    *   `SharedModulesTest` checks which qualified client each API gets.
 
 ### 3. Modularization Strategy
 For production apps, use a multi-module strategy to improve build times and separation of concerns.
@@ -44,7 +47,7 @@ For production apps, use a multi-module strategy to improve build times and sepa
 **This project today** is moving to Kotlin Multiplatform for an iOS app:
 
 *   **:shared** (KMP library: Android, `iosArm64`, `iosSimulatorArm64`): the domain layer, plus the data code that needs only multiplatform libraries (DTOs, mappers, Room, Apollo, the Ktor clients and APIs, and the repositories built on them; `:app` passes in the engine and anything from `BuildConfig`). `commonMain` has no `android.*`, `java.*` or `javax.*` imports; platform differences go through `expect`/`actual` in `androidMain`/`iosMain`.
-*   **:app** (Android application): UI, Hilt modules, and data code still tied to Android or the JVM (Firebase Auth and AI, and the OkHttp base client the Ktor engine, Coil and Apollo share). It moves into `:shared` as multiplatform replacements land.
+*   **:app** (Android application): UI, the Android Koin modules, and data code still tied to Android or the JVM (Firebase Auth and AI, and the OkHttp base client the Ktor engine, Coil and Apollo share). It moves into `:shared` as multiplatform replacements land.
 
 The target layout below is the direction for splitting further, not the current state:
 

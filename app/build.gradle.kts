@@ -7,8 +7,6 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.hilt)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.google.services)
 }
@@ -17,7 +15,7 @@ ktlint {
     android.set(true)
     ignoreFailures.set(false)
     filter {
-        // Hilt/KSP generate a lot of Kotlin under build/ that must not be linted.
+        // Generated Kotlin (BuildConfig and the like) lands under build/ and must not be linted.
         exclude { it.file.path.contains("/build/") }
     }
 }
@@ -116,10 +114,9 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.core)
 
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.hilt.navigation.compose)
 
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.android.compiler)
+    implementation(libs.koin.android)
+    implementation(libs.koin.compose.viewmodel)
 
     implementation(libs.room3.runtime)
 
@@ -158,6 +155,7 @@ dependencies {
     testImplementation(libs.okhttp.mockwebserver3.junit4)
     testImplementation(libs.turbine)
     testImplementation(libs.mockk)
+    testImplementation(libs.koin.test)
     // Runs the Room DAO and repository tests on the JVM against a real SQLite database.
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)

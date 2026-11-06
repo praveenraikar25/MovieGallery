@@ -19,7 +19,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.raikar.moviegallery.domain.model.MovieSection
 import com.raikar.moviegallery.ui.components.ErrorState
@@ -28,12 +27,13 @@ import com.raikar.moviegallery.ui.components.LoadingState
 import com.raikar.moviegallery.ui.components.RailMovieCard
 import com.raikar.moviegallery.ui.components.SectionHeader
 import com.raikar.moviegallery.ui.theme.Sizes
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun HomeScreen(
     onMovieClick: (Int) -> Unit,
     onProfileClick: () -> Unit,
-    viewModel: HomeViewModel = hiltViewModel(),
+    viewModel: HomeViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val avatarInitial by viewModel.avatarInitial.collectAsStateWithLifecycle()

@@ -59,7 +59,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.core.view.WindowCompat
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.raikar.moviegallery.domain.model.Movie
@@ -78,12 +77,13 @@ import com.raikar.moviegallery.ui.theme.Sizes
 import com.raikar.moviegallery.ui.theme.movieColors
 import com.raikar.moviegallery.ui.util.MovieGradients
 import kotlinx.coroutines.flow.filterNotNull
+import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.roundToInt
 
 @Composable
 fun MovieDetailScreen(
     onBack: () -> Unit,
-    viewModel: MovieDetailViewModel = hiltViewModel(),
+    viewModel: MovieDetailViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
