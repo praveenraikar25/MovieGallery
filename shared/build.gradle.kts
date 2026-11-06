@@ -43,6 +43,7 @@ kotlin {
             api(libs.room3.runtime)
             api(libs.ktor.client.core)
             implementation(libs.ktor.client.logging)
+            api(libs.koin.core)
         }
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)
