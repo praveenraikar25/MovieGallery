@@ -34,7 +34,7 @@ rules:
     - Mark accepted placeholder behavior or known gaps with a "> Note:" line; when a change resolves one, the MODIFIED requirement drops that note.
   design:
     - Follow the layering in CLAUDE.md and .claude/skills/android-architecture/SKILL.md (UI -> domain use case -> repository interface -> data impl); the domain layer stays free of android.* imports.
-    - For TMDB or BFF calls, name the HTTP client (@TmdbClient or @BffClient) and map failures to DataResult/AppError via safeApiCall.
+    - For TMDB or BFF calls, name the HTTP client (the TmdbClient or BffClient Koin qualifier) and map failures to DataResult/AppError via safeApiCall.
     - For Firebase AI calls, go through the Firebase AI client (no Ktor client) and map failures via safeAiCall.
     - New or upgraded dependencies use their latest stable release and are declared in gradle/libs.versions.toml only.
     - UI is Jetpack Compose with Material 3; no XML layouts or View-based screens.

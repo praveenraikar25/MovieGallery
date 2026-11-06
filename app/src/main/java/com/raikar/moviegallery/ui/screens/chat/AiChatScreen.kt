@@ -65,7 +65,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.raikar.moviegallery.domain.model.AppError
@@ -73,11 +72,12 @@ import com.raikar.moviegallery.ui.components.AppIcons
 import com.raikar.moviegallery.ui.theme.movieColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun AiChatScreen(
     onBack: () -> Unit,
-    viewModel: AiChatViewModel = hiltViewModel(),
+    viewModel: AiChatViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var input by rememberSaveable { mutableStateOf("") }

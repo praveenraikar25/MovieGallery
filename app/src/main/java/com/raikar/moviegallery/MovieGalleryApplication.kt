@@ -4,24 +4,21 @@ import android.app.Application
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
-import dagger.hilt.android.HiltAndroidApp
-import javax.inject.Inject
-import javax.inject.Provider
+import com.raikar.moviegallery.di.androidModules
+import com.raikar.moviegallery.di.sharedModules
+import org.koin.android.ext.android.get
+import org.koin.android.ext.koin.androidContext
+import org.koin.core.context.startKoin
 
-@HiltAndroidApp
 class MovieGalleryApplication :
     Application(),
     SingletonImageLoader.Factory {
-    /**
-     * A Provider because [newImageLoader] runs on the first image load — after Hilt
-     * field injection — and this keeps the loader (and its shared OkHttp client)
-     * configured in [com.raikar.moviegallery.di.NetworkModule] rather than here.
-     */
-    @Inject
-    lateinit var imageLoader: Provider<ImageLoader>
-
     override fun onCreate() {
         super.onCreate()
+        startKoin {
+            androidContext(this@MovieGalleryApplication)
+            modules(sharedModules + androidModules)
+        }
         // Firebase AI Logic enforces App Check, so without a provider every Gemini
         // call fails before it reaches the model. The two provider artifacts live on
         // different variant classpaths, so the implementation is per-source-set.
@@ -29,5 +26,10 @@ class MovieGalleryApplication :
         installAppCheck()
     }
 
-    override fun newImageLoader(context: PlatformContext): ImageLoader = imageLoader.get()
+    /**
+     * Runs on the first image load, after [onCreate] has started Koin, so the loader (and its
+     * shared OkHttp client) stays configured in the DI graph (`androidPlatformModule`) rather
+     * than here.
+     */
+    override fun newImageLoader(context: PlatformContext): ImageLoader = get()
 }

@@ -1,7 +1,6 @@
 package com.raikar.moviegallery.ui.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -11,9 +10,10 @@ import com.raikar.moviegallery.ui.screens.chat.AiChatScreen
 import com.raikar.moviegallery.ui.screens.detail.MovieDetailScreen
 import com.raikar.moviegallery.ui.screens.login.LoginScreen
 import com.raikar.moviegallery.ui.screens.tvshows.TopTvShowsScreen
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun AppNavHost(sessionViewModel: AppSessionViewModel = hiltViewModel()) {
+fun AppNavHost(sessionViewModel: AppSessionViewModel = koinViewModel()) {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = sessionViewModel.startRoute) {
