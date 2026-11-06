@@ -42,7 +42,8 @@ kotlin {
             api(libs.apollo.runtime)
             api(libs.room3.runtime)
             api(libs.ktor.client.core)
-            implementation(libs.ktor.client.logging)
+            // api: NetworkConfig and the client factories expose LogLevel and Logger.
+            api(libs.ktor.client.logging)
             api(libs.koin.core)
         }
         androidMain.dependencies {

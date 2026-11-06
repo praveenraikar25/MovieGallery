@@ -6,6 +6,7 @@ import com.raikar.moviegallery.data.remote.TmdbApi
 import com.raikar.moviegallery.data.remote.fixture
 import com.raikar.moviegallery.domain.repository.AuthTokenProvider
 import com.raikar.moviegallery.testutil.FakeAuthTokenProvider
+import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -13,6 +14,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
 import io.ktor.http.headersOf
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.test.runTest
 import org.koin.core.KoinApplication
 import org.koin.dsl.koinApplication
@@ -21,6 +23,7 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /**
  * Checks that each API gets the client behind its own qualifier. Koin's `verify()` sees only
@@ -84,6 +87,19 @@ class SharedModulesTest {
                 "TMDB token leaked to the BFF",
             )
         }
+
+    @Test
+    fun `closing the graph closes both clients but leaves the shared engine open`() {
+        val tmdbClient = koin.koin.get<HttpClient>(TmdbClient)
+        val bffClient = koin.koin.get<HttpClient>(BffClient)
+
+        koin.close()
+
+        assertFalse(tmdbClient.isActive, "TMDB client still open")
+        assertFalse(bffClient.isActive, "BFF client still open")
+        // On Android the engines wrap the OkHttpClient that Coil and Apollo share.
+        assertTrue(engine.isActive, "engine was closed with its client")
+    }
 
     private companion object {
         const val TMDB_TOKEN = "tmdb-test-token"

@@ -39,11 +39,16 @@ import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
 import org.koin.dsl.module
+import org.koin.dsl.onClose
 import kotlin.time.Clock
 
 /**
  * The TMDB and BFF Ktor clients and their APIs. Each client gets its own engine from the
  * platform's `HttpClientEngine` factory, so closing one never breaks the other.
+ *
+ * Closing the graph closes both clients. A client built on an engine passed in from outside
+ * leaves that engine open, which is what we want: on Android the engines wrap the `OkHttpClient`
+ * that Coil and Apollo also use.
  */
 val networkModule =
     module {
@@ -55,7 +60,7 @@ val networkModule =
                 logLevel = config.logLevel,
                 logger = config.logger,
             )
-        }
+        } onClose { it?.close() }
         single { TmdbApi(get(TmdbClient)) }
 
         // The BFF verifies the signed-in user's Firebase ID token and rejects requests without it;
@@ -69,7 +74,7 @@ val networkModule =
                 logLevel = config.logLevel,
                 logger = config.logger,
             )
-        }
+        } onClose { it?.close() }
         single { BffApi(get(BffClient)) }
     }
 

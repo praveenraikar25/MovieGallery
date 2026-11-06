@@ -22,8 +22,10 @@ import com.raikar.moviegallery.domain.usecase.SignInWithGoogleUseCase
 import com.raikar.moviegallery.domain.usecase.SignOutUseCase
 import com.raikar.moviegallery.domain.usecase.SignUpUseCase
 import com.raikar.moviegallery.domain.usecase.ToggleWatchlistUseCase
+import io.ktor.client.HttpClient
 import io.mockk.mockk
 import org.junit.After
+import org.junit.Assert.assertNotSame
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.koin.android.ext.koin.androidContext
@@ -71,6 +73,15 @@ class KoinGraphResolutionTest {
         (useCases + ImageLoader::class).forEach { type ->
             koin.koin.get<Any>(type)
         }
+    }
+
+    @Test
+    fun `the TMDB and BFF clients each get their own engine`() {
+        val tmdb = koin.koin.get<HttpClient>(TmdbClient)
+        val bff = koin.koin.get<HttpClient>(BffClient)
+
+        // The engine binding is a factory: a shared engine would be closed along with either client.
+        assertNotSame(tmdb.engine, bff.engine)
     }
 
     private val useCases: List<KClass<*>> =
