@@ -1,8 +1,8 @@
 package com.raikar.moviegallery.ui.screens.login
 
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class EmailValidatorTest {
     @Test

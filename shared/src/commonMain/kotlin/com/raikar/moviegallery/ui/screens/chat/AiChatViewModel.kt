@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.util.concurrent.atomic.AtomicLong
 
 /**
  * A local welcome bubble, not part of the conversation: it is never sent to the
@@ -38,7 +37,11 @@ class AiChatViewModel(
     private val sendChatMessage: SendChatMessageUseCase,
     private val identifyMoviePoster: IdentifyMoviePosterUseCase,
 ) : ViewModel() {
-    private val nextId = AtomicLong(GREETING_ID + 1L)
+    /**
+     * Not atomic: every write happens on the main thread, from the functions the UI calls or
+     * from [handle], which runs in `viewModelScope` (`Dispatchers.Main.immediate`).
+     */
+    private var nextId = GREETING_ID + 1L
 
     private val _uiState = MutableStateFlow(ChatUiState(messages = listOf(greeting)))
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
@@ -50,7 +53,7 @@ class AiChatViewModel(
         // The history sent to the model is everything already exchanged, which
         // excludes both the local greeting and the message being sent right now.
         val history = _uiState.value.messages.toHistory()
-        val userMessage = ChatMessage(id = nextId.getAndIncrement(), text = trimmed, isUser = true)
+        val userMessage = ChatMessage(id = nextId++, text = trimmed, isUser = true)
         appendAndMarkSending(userMessage, isIdentifyingPoster = false)
 
         viewModelScope.launch {
@@ -64,7 +67,7 @@ class AiChatViewModel(
 
         val history = _uiState.value.messages.toHistory()
         val userMessage =
-            ChatMessage(id = nextId.getAndIncrement(), text = "", isUser = true, imageUri = imageUri)
+            ChatMessage(id = nextId++, text = "", isUser = true, imageUri = imageUri)
         appendAndMarkSending(userMessage, isIdentifyingPoster = true)
 
         viewModelScope.launch {
@@ -114,7 +117,7 @@ class AiChatViewModel(
         _uiState.value =
             when (result) {
                 is DataResult.Success -> {
-                    val reply = ChatMessage(id = nextId.getAndIncrement(), text = result.data, isUser = false)
+                    val reply = ChatMessage(id = nextId++, text = result.data, isUser = false)
                     _uiState.value.copy(
                         messages = _uiState.value.messages + reply,
                         isSending = false,

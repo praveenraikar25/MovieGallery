@@ -9,24 +9,37 @@ import com.raikar.moviegallery.domain.usecase.GetHomeSectionsUseCase
 import com.raikar.moviegallery.domain.usecase.ObserveCurrentUserUseCase
 import com.raikar.moviegallery.testutil.FakeAuthRepository
 import com.raikar.moviegallery.testutil.FakeMovieRepository
-import com.raikar.moviegallery.testutil.MainDispatcherRule
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
-import org.junit.Rule
-import org.junit.Test
+import kotlinx.coroutines.test.setMain
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest {
-    @get:Rule
-    val mainDispatcherRule = MainDispatcherRule()
+    private val testDispatcher = UnconfinedTestDispatcher()
+
+    // viewModelScope runs on Dispatchers.Main, which tests replace with a test dispatcher.
+    @BeforeTest
+    fun setMainDispatcher() {
+        Dispatchers.setMain(testDispatcher)
+    }
+
+    @AfterTest
+    fun resetMainDispatcher() {
+        Dispatchers.resetMain()
+    }
 
     private fun movie(id: Int) =
         Movie(

@@ -6,6 +6,11 @@ import com.raikar.moviegallery.domain.repository.AuthRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 
+/**
+ * A copy of `:shared`'s `commonTest` fake, which `:app`'s tests can't see. It exists only for
+ * `WatchlistRepositoryImplTest` and `WatchlistPersistenceTest` (Robolectric, real Room). Extend the
+ * shared copy, and delete this one when those tests move to `:shared`.
+ */
 class FakeAuthRepository(
     override var isSignedIn: Boolean = false,
 ) : AuthRepository {

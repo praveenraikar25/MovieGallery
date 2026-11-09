@@ -1,6 +1,5 @@
 package com.raikar.moviegallery.ui.screens.detail
 
-import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import com.raikar.moviegallery.domain.model.AppError
 import com.raikar.moviegallery.domain.model.CastMember
@@ -16,21 +15,35 @@ import com.raikar.moviegallery.domain.usecase.ToggleWatchlistUseCase
 import com.raikar.moviegallery.testutil.FakeCountryRepository
 import com.raikar.moviegallery.testutil.FakeMovieRepository
 import com.raikar.moviegallery.testutil.FakeWatchlistRepository
-import com.raikar.moviegallery.testutil.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
-import org.junit.Rule
-import org.junit.Test
+import kotlinx.coroutines.test.setMain
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MovieDetailViewModelTest {
-    @get:Rule
-    val mainDispatcherRule = MainDispatcherRule()
+    private val testDispatcher = UnconfinedTestDispatcher()
+
+    // viewModelScope runs on Dispatchers.Main, which tests replace with a test dispatcher.
+    @BeforeTest
+    fun setMainDispatcher() {
+        Dispatchers.setMain(testDispatcher)
+    }
+
+    @AfterTest
+    fun resetMainDispatcher() {
+        Dispatchers.resetMain()
+    }
 
     private val movie =
         Movie(
@@ -57,7 +70,7 @@ class MovieDetailViewModelTest {
         watchlistRepository: FakeWatchlistRepository = FakeWatchlistRepository(),
         countryRepository: FakeCountryRepository = FakeCountryRepository(),
     ) = MovieDetailViewModel(
-        savedStateHandle = SavedStateHandle(mapOf("movieId" to movie.id)),
+        movieId = movie.id,
         getMovie = GetMovieUseCase(movieRepository),
         observeIsInWatchlist = ObserveIsInWatchlistUseCase(watchlistRepository),
         toggleWatchlist = ToggleWatchlistUseCase(watchlistRepository),
@@ -150,7 +163,7 @@ class MovieDetailViewModelTest {
         }
 
     @Test
-    fun `tapping a country opens its sheet loading, then shows its details`() =
+    fun `tapping a country opens its sheet loading and then shows its details`() =
         runTest {
             val gate = CompletableDeferred<Unit>()
             val countries =

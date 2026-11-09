@@ -1,6 +1,5 @@
 package com.raikar.moviegallery.ui.screens.detail
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.raikar.moviegallery.domain.model.DataResult
@@ -17,15 +16,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/**
+ * [movieId] is a plain constructor parameter, not read from a `SavedStateHandle`: Android passes
+ * the navigation argument with Koin `parametersOf`, and Swift passes it directly.
+ */
 class MovieDetailViewModel(
-    savedStateHandle: SavedStateHandle,
+    private val movieId: Int,
     private val getMovie: GetMovieUseCase,
     observeIsInWatchlist: ObserveIsInWatchlistUseCase,
     private val toggleWatchlist: ToggleWatchlistUseCase,
     private val getCountryDetails: GetCountryDetailsUseCase,
 ) : ViewModel() {
-    private val movieId: Int = checkNotNull(savedStateHandle["movieId"])
-
     private val _uiState = MutableStateFlow(MovieDetailUiState())
 
     /** The in-flight country lookup, cancelled when the sheet closes or another country opens. */

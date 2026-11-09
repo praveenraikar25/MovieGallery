@@ -31,12 +31,22 @@ import com.raikar.moviegallery.domain.usecase.SignInWithGoogleUseCase
 import com.raikar.moviegallery.domain.usecase.SignOutUseCase
 import com.raikar.moviegallery.domain.usecase.SignUpUseCase
 import com.raikar.moviegallery.domain.usecase.ToggleWatchlistUseCase
+import com.raikar.moviegallery.ui.navigation.AppSessionViewModel
+import com.raikar.moviegallery.ui.screens.chat.AiChatViewModel
+import com.raikar.moviegallery.ui.screens.detail.MovieDetailViewModel
+import com.raikar.moviegallery.ui.screens.home.HomeViewModel
+import com.raikar.moviegallery.ui.screens.login.LoginViewModel
+import com.raikar.moviegallery.ui.screens.profile.ProfileViewModel
+import com.raikar.moviegallery.ui.screens.search.SearchViewModel
+import com.raikar.moviegallery.ui.screens.tvshows.TopTvShowsViewModel
+import com.raikar.moviegallery.ui.screens.watchlist.WatchlistViewModel
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.bind
 import org.koin.dsl.module
 import org.koin.dsl.onClose
@@ -114,8 +124,29 @@ val domainModule =
     }
 
 /**
- * Everything the shared code wires itself, including the database ([databaseModule]). A
- * platform loads these alongside its own modules, which must supply:
+ * Every screen's ViewModel. On Android, `koinViewModel()` scopes each one to the current
+ * `LocalViewModelStoreOwner`: the navigation entry for screens, the activity for
+ * [AppSessionViewModel]. Navigation arguments are constructor parameters passed with
+ * `parametersOf` ([MovieDetailViewModel]'s `movieId`), never a `SavedStateHandle`, so Swift can
+ * pass them too.
+ */
+val viewModelModule =
+    module {
+        viewModelOf(::AppSessionViewModel)
+        viewModelOf(::AiChatViewModel)
+        viewModelOf(::HomeViewModel)
+        viewModelOf(::LoginViewModel)
+        viewModelOf(::MovieDetailViewModel)
+        viewModelOf(::ProfileViewModel)
+        viewModelOf(::SearchViewModel)
+        viewModelOf(::TopTvShowsViewModel)
+        viewModelOf(::WatchlistViewModel)
+    }
+
+/**
+ * Everything the shared code wires itself, including the database ([databaseModule]) and the
+ * ViewModels ([viewModelModule]). A platform loads these alongside its own modules, which must
+ * supply:
  *
  * - `io.ktor.client.engine.HttpClientEngine`, as a **factory** (a new engine per client)
  * - [NetworkConfig]
@@ -123,4 +154,4 @@ val domainModule =
  * - `AuthRepository`, `AuthTokenProvider` and `AiChatRepository`
  * - on Android only, the application `Context`, via `androidContext(...)`
  */
-val sharedModules = listOf(networkModule, dataModule, domainModule, databaseModule)
+val sharedModules = listOf(networkModule, dataModule, domainModule, databaseModule, viewModelModule)

@@ -6,23 +6,36 @@ import com.raikar.moviegallery.domain.model.DataResult
 import com.raikar.moviegallery.domain.model.Movie
 import com.raikar.moviegallery.domain.usecase.SearchMoviesUseCase
 import com.raikar.moviegallery.testutil.FakeMovieRepository
-import com.raikar.moviegallery.testutil.MainDispatcherRule
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Rule
-import org.junit.Test
+import kotlinx.coroutines.test.setMain
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /** Matches the `QUERY_DEBOUNCE_MS` constant private to [SearchViewModel]. */
 private const val QUERY_DEBOUNCE_MS = 500L
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SearchViewModelTest {
-    @get:Rule
-    val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+    private val testDispatcher = StandardTestDispatcher()
+
+    // viewModelScope runs on Dispatchers.Main, which tests replace with a test dispatcher.
+    @BeforeTest
+    fun setMainDispatcher() {
+        Dispatchers.setMain(testDispatcher)
+    }
+
+    @AfterTest
+    fun resetMainDispatcher() {
+        Dispatchers.resetMain()
+    }
 
     private fun movie(id: Int) =
         Movie(
@@ -38,7 +51,7 @@ class SearchViewModelTest {
 
     @Test
     fun `shows popular movies for a blank query`() =
-        runTest(mainDispatcherRule.testDispatcher) {
+        runTest(testDispatcher) {
             val repository = FakeMovieRepository(popularResult = DataResult.Success(listOf(movie(1))))
             val viewModel = SearchViewModel(SearchMoviesUseCase(repository))
 
@@ -56,7 +69,7 @@ class SearchViewModelTest {
 
     @Test
     fun `onQueryChange echoes the query immediately then debounces the search`() =
-        runTest(mainDispatcherRule.testDispatcher) {
+        runTest(testDispatcher) {
             val repository =
                 FakeMovieRepository(
                     popularResult = DataResult.Success(emptyList()),
@@ -89,7 +102,7 @@ class SearchViewModelTest {
 
     @Test
     fun `emits an error when the search fails`() =
-        runTest(mainDispatcherRule.testDispatcher) {
+        runTest(testDispatcher) {
             val repository =
                 FakeMovieRepository(
                     popularResult = DataResult.Success(emptyList()),
@@ -116,7 +129,7 @@ class SearchViewModelTest {
 
     @Test
     fun `retry re-runs the current query`() =
-        runTest(mainDispatcherRule.testDispatcher) {
+        runTest(testDispatcher) {
             val repository =
                 FakeMovieRepository(
                     popularResult = DataResult.Success(emptyList()),

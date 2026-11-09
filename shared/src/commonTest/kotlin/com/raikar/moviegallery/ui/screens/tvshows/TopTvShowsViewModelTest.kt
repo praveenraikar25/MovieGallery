@@ -7,19 +7,33 @@ import com.raikar.moviegallery.domain.model.TvShow
 import com.raikar.moviegallery.domain.model.TvShowPage
 import com.raikar.moviegallery.domain.usecase.GetTopTvShowsUseCase
 import com.raikar.moviegallery.testutil.FakeTvShowRepository
-import com.raikar.moviegallery.testutil.MainDispatcherRule
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
-import org.junit.Rule
-import org.junit.Test
+import kotlinx.coroutines.test.setMain
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TopTvShowsViewModelTest {
-    @get:Rule
-    val mainDispatcherRule = MainDispatcherRule()
+    private val testDispatcher = UnconfinedTestDispatcher()
+
+    // viewModelScope runs on Dispatchers.Main, which tests replace with a test dispatcher.
+    @BeforeTest
+    fun setMainDispatcher() {
+        Dispatchers.setMain(testDispatcher)
+    }
+
+    @AfterTest
+    fun resetMainDispatcher() {
+        Dispatchers.resetMain()
+    }
 
     private fun show(id: Int) =
         TvShow(

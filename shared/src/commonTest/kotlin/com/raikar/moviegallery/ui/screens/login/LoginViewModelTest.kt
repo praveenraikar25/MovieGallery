@@ -6,20 +6,34 @@ import com.raikar.moviegallery.domain.usecase.SignInUseCase
 import com.raikar.moviegallery.domain.usecase.SignInWithGoogleUseCase
 import com.raikar.moviegallery.domain.usecase.SignUpUseCase
 import com.raikar.moviegallery.testutil.FakeAuthRepository
-import com.raikar.moviegallery.testutil.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
-import org.junit.Rule
-import org.junit.Test
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LoginViewModelTest {
-    @get:Rule
-    val mainDispatcherRule = MainDispatcherRule()
+    private val testDispatcher = UnconfinedTestDispatcher()
+
+    // viewModelScope runs on Dispatchers.Main, which tests replace with a test dispatcher.
+    @BeforeTest
+    fun setMainDispatcher() {
+        Dispatchers.setMain(testDispatcher)
+    }
+
+    @AfterTest
+    fun resetMainDispatcher() {
+        Dispatchers.resetMain()
+    }
 
     private val repository = FakeAuthRepository()
 
@@ -43,7 +57,7 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun `initial state is empty, sign-in mode and unauthenticated`() {
+    fun `initial state is empty in sign-in mode and unauthenticated`() {
         val state = viewModel().uiState.value
 
         assertEquals("", state.email)
@@ -216,7 +230,7 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun `network, rate limit and unknown failures map to specific messages and keep the fields`() {
+    fun `network and rate limit and unknown failures map to specific messages and keep the fields`() {
         val cases =
             listOf(
                 AuthError.Network to "No internet connection. Check your network and try again.",
