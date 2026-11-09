@@ -114,13 +114,13 @@ val domainModule =
     }
 
 /**
- * Everything the shared code wires itself. A platform loads these alongside its own modules,
- * which must supply:
+ * Everything the shared code wires itself, including the database ([databaseModule]). A
+ * platform loads these alongside its own modules, which must supply:
  *
  * - `io.ktor.client.engine.HttpClientEngine`, as a **factory** (a new engine per client)
  * - [NetworkConfig]
- * - [MovieGalleryDatabase]
  * - `com.apollographql.apollo.ApolloClient`
  * - `AuthRepository`, `AuthTokenProvider` and `AiChatRepository`
+ * - on Android only, the application `Context`, via `androidContext(...)`
  */
-val sharedModules = listOf(networkModule, dataModule, domainModule)
+val sharedModules = listOf(networkModule, dataModule, domainModule, databaseModule)

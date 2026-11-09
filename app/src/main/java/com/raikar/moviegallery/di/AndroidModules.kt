@@ -1,7 +1,6 @@
 package com.raikar.moviegallery.di
 
 import android.content.Context
-import androidx.room3.Room
 import coil3.ImageLoader
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
@@ -9,7 +8,6 @@ import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.network.okHttpClient
 import com.google.firebase.auth.FirebaseAuth
 import com.raikar.moviegallery.BuildConfig
-import com.raikar.moviegallery.data.local.MovieGalleryDatabase
 import com.raikar.moviegallery.data.remote.NetworkConfig
 import com.raikar.moviegallery.data.remote.auth.FirebaseAuthTokenProvider
 import com.raikar.moviegallery.data.repository.AuthRepositoryImpl
@@ -81,14 +79,6 @@ val androidPlatformModule =
                 logLevel = if (BuildConfig.DEBUG) LogLevel.ALL else LogLevel.NONE,
                 logger = Logger.ANDROID,
             )
-        }
-
-        // No fallbackToDestructiveMigration: a missing migration should fail loudly in
-        // development rather than silently wipe users' watchlists in production.
-        single {
-            Room
-                .databaseBuilder(androidContext(), MovieGalleryDatabase::class.java, MovieGalleryDatabase.NAME)
-                .build()
         }
 
         // Derived from the base client so it reuses the connection pool and timeouts.

@@ -26,8 +26,12 @@ kotlin {
         // Runs commonTest (and androidHostTest) on the JVM as part of ./gradlew test.
         withHostTest {}
     }
-    iosArm64()
-    iosSimulatorArm64()
+    listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
+        // Room's iOS driver uses the system SQLite, and the androidx.sqlite interop declares
+        // linker flags only for Linux and macOS, so every iOS binary (test executables now,
+        // the app's framework later) has to link libsqlite3 itself.
+        target.binaries.configureEach { linkerOpts("-lsqlite3") }
+    }
 
     // Room's multiplatform database constructor is an expect object, which Kotlin still
     // flags as Beta on every compile.
