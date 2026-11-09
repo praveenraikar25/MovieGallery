@@ -1,0 +1,5 @@
+schema: spec-driven
+created: 2026-11-09
+goal: "Phase 4b of the KMP migration: the ViewModels move to :shared, ready for
+  a SwiftUI app"
+skip_specs: true
