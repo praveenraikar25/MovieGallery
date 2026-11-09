@@ -40,7 +40,7 @@ rules:
     - UI is Jetpack Compose with Material 3; no XML layouts or View-based screens.
   tasks:
     - Order tasks along the matching CLAUDE.md checklist ("Adding a feature screen" or "Adding a TMDB endpoint").
-    - Every spec scenario maps to at least one JVM unit test (ViewModel tests use fakes from app/src/test/.../testutil; TMDB and BFF API/repository/mapper tests use the FakeHttpServer harness and TestFixtures.kt in shared/src/commonTest; Countries GraphQL tests follow the "Adding a GraphQL query" checklist in CLAUDE.md). No instrumented tests.
+    - Every spec scenario maps to at least one JVM unit test (ViewModel tests live in shared/src/commonTest and use fakes from shared/src/commonTest/.../testutil; TMDB and BFF API/repository/mapper tests use the FakeHttpServer harness and TestFixtures.kt in shared/src/commonTest; Countries GraphQL tests follow the "Adding a GraphQL query" checklist in CLAUDE.md). No instrumented tests.
     - End with verification tasks that run ./gradlew ktlintCheck, ./gradlew test and ./gradlew assembleDebug.
 
 operations:

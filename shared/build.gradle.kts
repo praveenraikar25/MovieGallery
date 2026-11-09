@@ -49,6 +49,9 @@ kotlin {
             // api: NetworkConfig and the client factories expose LogLevel and Logger.
             api(libs.ktor.client.logging)
             api(libs.koin.core)
+            // api: :app's screens see the ViewModel supertype and koinViewModel() needs viewModelOf.
+            api(libs.androidx.lifecycle.viewmodel)
+            api(libs.koin.core.viewmodel)
         }
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)
@@ -60,6 +63,7 @@ kotlin {
             implementation(kotlin("test"))
             implementation(libs.ktor.client.mock)
             implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.turbine)
         }
     }
 }

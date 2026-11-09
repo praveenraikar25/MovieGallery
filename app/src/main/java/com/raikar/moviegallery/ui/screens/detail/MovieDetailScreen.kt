@@ -77,13 +77,13 @@ import com.raikar.moviegallery.ui.theme.Sizes
 import com.raikar.moviegallery.ui.theme.movieColors
 import com.raikar.moviegallery.ui.util.MovieGradients
 import kotlinx.coroutines.flow.filterNotNull
-import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.roundToInt
 
+/** [viewModel] has no default: it needs the route's `movieId`, which `AppNavHost` passes in. */
 @Composable
 fun MovieDetailScreen(
+    viewModel: MovieDetailViewModel,
     onBack: () -> Unit,
-    viewModel: MovieDetailViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 

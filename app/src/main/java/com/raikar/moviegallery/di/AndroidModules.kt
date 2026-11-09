@@ -13,15 +13,6 @@ import com.raikar.moviegallery.data.remote.auth.FirebaseAuthTokenProvider
 import com.raikar.moviegallery.data.repository.AuthRepositoryImpl
 import com.raikar.moviegallery.domain.repository.AuthRepository
 import com.raikar.moviegallery.domain.repository.AuthTokenProvider
-import com.raikar.moviegallery.ui.navigation.AppSessionViewModel
-import com.raikar.moviegallery.ui.screens.chat.AiChatViewModel
-import com.raikar.moviegallery.ui.screens.detail.MovieDetailViewModel
-import com.raikar.moviegallery.ui.screens.home.HomeViewModel
-import com.raikar.moviegallery.ui.screens.login.LoginViewModel
-import com.raikar.moviegallery.ui.screens.profile.ProfileViewModel
-import com.raikar.moviegallery.ui.screens.search.SearchViewModel
-import com.raikar.moviegallery.ui.screens.tvshows.TopTvShowsViewModel
-import com.raikar.moviegallery.ui.screens.watchlist.WatchlistViewModel
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.logging.ANDROID
@@ -31,7 +22,6 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.singleOf
-import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.bind
 import org.koin.dsl.module
 import java.util.concurrent.TimeUnit
@@ -120,23 +110,5 @@ private fun imageLoader(
         .crossfade(true)
         .build()
 
-/**
- * Resolved with `koinViewModel()`, which scopes each ViewModel to the current
- * `LocalViewModelStoreOwner`: the navigation entry for screens, the activity for
- * [AppSessionViewModel].
- */
-val viewModelModule =
-    module {
-        viewModelOf(::AppSessionViewModel)
-        viewModelOf(::AiChatViewModel)
-        viewModelOf(::HomeViewModel)
-        viewModelOf(::LoginViewModel)
-        viewModelOf(::MovieDetailViewModel)
-        viewModelOf(::ProfileViewModel)
-        viewModelOf(::SearchViewModel)
-        viewModelOf(::TopTvShowsViewModel)
-        viewModelOf(::WatchlistViewModel)
-    }
-
-/** Every Android module; `startKoin` loads these together with `sharedModules`. */
-val androidModules = listOf(androidPlatformModule, aiModule, viewModelModule)
+/** Every Android module; `startKoin` loads these together with `sharedModules` (which has the ViewModels). */
+val androidModules = listOf(androidPlatformModule, aiModule)

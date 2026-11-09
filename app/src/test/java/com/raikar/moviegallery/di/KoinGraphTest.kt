@@ -1,7 +1,6 @@
 package com.raikar.moviegallery.di
 
 import android.content.Context
-import androidx.lifecycle.SavedStateHandle
 import com.google.firebase.FirebaseApp
 import com.google.firebase.inject.Provider
 import org.junit.Test
@@ -26,9 +25,9 @@ class KoinGraphTest {
         module { includes(sharedModules + androidModules) }.verify(
             extraTypes =
                 listOf(
-                    // Supplied by the running app: androidContext() and the navigation entry.
+                    // Supplied by the running app: androidContext() and the detail route's movieId.
                     Context::class,
-                    SavedStateHandle::class,
+                    Int::class,
                     // FirebaseAuth's own constructor parameters. verify() walks into the
                     // constructor of every bound type, but FirebaseAuth.getInstance() builds it,
                     // never Koin.

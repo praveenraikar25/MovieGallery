@@ -11,12 +11,16 @@ import com.raikar.moviegallery.ui.screens.detail.MovieDetailScreen
 import com.raikar.moviegallery.ui.screens.login.LoginScreen
 import com.raikar.moviegallery.ui.screens.tvshows.TopTvShowsScreen
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @Composable
 fun AppNavHost(sessionViewModel: AppSessionViewModel = koinViewModel()) {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = sessionViewModel.startRoute) {
+    // Read once at creation, so the start destination never changes under the NavHost.
+    val startRoute = if (sessionViewModel.isSignedIn) Routes.MAIN else Routes.LOGIN
+
+    NavHost(navController = navController, startDestination = startRoute) {
         composable(Routes.LOGIN) {
             LoginScreen(
                 onAuthenticated = {
@@ -42,8 +46,14 @@ fun AppNavHost(sessionViewModel: AppSessionViewModel = koinViewModel()) {
         composable(
             route = Routes.DETAIL,
             arguments = listOf(navArgument("movieId") { type = NavType.IntType }),
-        ) {
-            MovieDetailScreen(onBack = { navController.popBackStack() })
+        ) { entry ->
+            // Restored with the back stack after process death, as SavedStateHandle was.
+            val movieId = checkNotNull(entry.arguments?.getInt("movieId"))
+            MovieDetailScreen(
+                // Keyed to this back-stack entry, so each detail screen gets its own ViewModel.
+                viewModel = koinViewModel { parametersOf(movieId) },
+                onBack = { navController.popBackStack() },
+            )
         }
         composable(Routes.AI_CHAT) {
             AiChatScreen(onBack = { navController.popBackStack() })
