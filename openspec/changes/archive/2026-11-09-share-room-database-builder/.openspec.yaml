@@ -1,0 +1,5 @@
+schema: spec-driven
+created: 2026-11-09
+goal: "Phase 4a of the KMP migration: :shared builds the Room database on
+  Android and iOS"
+skip_specs: true
