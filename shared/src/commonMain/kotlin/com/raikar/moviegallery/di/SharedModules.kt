@@ -153,5 +153,8 @@ val viewModelModule =
  * - `com.apollographql.apollo.ApolloClient`
  * - `AuthRepository`, `AuthTokenProvider` and `AiChatRepository`
  * - on Android only, the application `Context`, via `androidContext(...)`
+ *
+ * Android's are `androidModules` in `:app` (`androidPlatformModule`, `aiModule`); iOS's is
+ * `iosPlatformModule` in `iosMain`, loaded by `startMovieGallery`.
  */
 val sharedModules = listOf(networkModule, dataModule, domainModule, databaseModule, viewModelModule)

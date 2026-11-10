@@ -31,6 +31,12 @@ kotlin {
         // linker flags only for Linux and macOS, so every iOS binary (test executables now,
         // the app's framework later) has to link libsqlite3 itself.
         target.binaries.configureEach { linkerOpts("-lsqlite3") }
+        // The framework the iOS app (phase 5b) links. Static, so Xcode needs no embed step; it
+        // picks up -lsqlite3 through configureEach above.
+        target.binaries.framework {
+            baseName = "Shared"
+            isStatic = true
+        }
     }
 
     // Room's multiplatform database constructor is an expect object, which Kotlin still

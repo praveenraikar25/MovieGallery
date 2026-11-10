@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-10
+goal: "Phase 5a of the KMP migration: the iOS platform layer, so the full shared Koin graph resolves on iOS"
+skip_specs: true
