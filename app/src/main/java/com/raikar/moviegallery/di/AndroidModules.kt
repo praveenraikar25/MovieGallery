@@ -8,6 +8,7 @@ import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.network.okHttpClient
 import com.google.firebase.auth.FirebaseAuth
 import com.raikar.moviegallery.BuildConfig
+import com.raikar.moviegallery.data.remote.COUNTRIES_URL
 import com.raikar.moviegallery.data.remote.NetworkConfig
 import com.raikar.moviegallery.data.remote.auth.FirebaseAuthTokenProvider
 import com.raikar.moviegallery.data.repository.AuthRepositoryImpl
@@ -27,13 +28,6 @@ import org.koin.dsl.module
 import java.util.concurrent.TimeUnit
 
 private const val TIMEOUT_SECONDS = 15L
-
-/**
- * The Countries GraphQL backend: public and unauthenticated, so it needs no qualifier while it
- * is the app's only Apollo client. Add one (as `TmdbClient`/`BffClient` do) if a second GraphQL
- * backend arrives.
- */
-const val COUNTRIES_URL = "https://countries.trevorblades.com/graphql"
 
 /** What the shared modules need from Android (see `sharedModules`), plus Android-only services. */
 val androidPlatformModule =

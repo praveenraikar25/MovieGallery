@@ -11,8 +11,8 @@ import kotlin.reflect.KClass
  * Android. [clear] runs the ViewModel's `onCleared` and cancels its `viewModelScope`; Swift calls
  * it from the owning object's `deinit`.
  *
- * [create] is a plain lambda so this class doesn't depend on Koin. Phase 5 passes a Koin lookup,
- * for example `ViewModelOwner { koin.get<MovieDetailViewModel> { parametersOf(movieId) } }`.
+ * [create] is a plain lambda so this class doesn't depend on Koin. Swift passes a
+ * `MovieGalleryGraph` lookup, for example `ViewModelOwner { graph.movieDetailViewModel(movieId: id) }`.
  */
 class ViewModelOwner<VM : ViewModel>(
     private val create: () -> VM,

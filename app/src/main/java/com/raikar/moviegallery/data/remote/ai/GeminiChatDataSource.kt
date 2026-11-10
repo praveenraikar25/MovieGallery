@@ -33,7 +33,7 @@ class GeminiChatDataSource(
     /**
      * Sends [image] as an inline image part alongside a short instruction. The
      * detailed rules for identifying a poster live in the system instruction
-     * (see [com.raikar.moviegallery.di.AiModule]) so they apply to follow-up
+     * ([ChatModelConfig.systemPrompt]) so they apply to follow-up
      * questions about the same image too, not just this one turn.
      */
     suspend fun identifyPoster(
@@ -45,7 +45,7 @@ class GeminiChatDataSource(
             .sendMessage(
                 content(role = ROLE_USER) {
                     image(image)
-                    text(IDENTIFY_POSTER_PROMPT)
+                    text(ChatModelConfig.IDENTIFY_POSTER_PROMPT)
                 },
             ).text
     }
@@ -56,6 +56,5 @@ class GeminiChatDataSource(
     private companion object {
         const val ROLE_USER = "user"
         const val ROLE_MODEL = "model"
-        const val IDENTIFY_POSTER_PROMPT = "Identify the movie in this image."
     }
 }

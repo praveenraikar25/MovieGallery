@@ -2,6 +2,7 @@ package com.raikar.moviegallery.data.repository
 
 import com.raikar.moviegallery.data.remote.ai.GeminiChatDataSource
 import com.raikar.moviegallery.data.remote.ai.PosterImageDecoder
+import com.raikar.moviegallery.data.remote.ai.requireReplyText
 import com.raikar.moviegallery.data.remote.ai.safeAiCall
 import com.raikar.moviegallery.domain.model.AppError
 import com.raikar.moviegallery.domain.model.ChatTurn
@@ -21,7 +22,7 @@ class AiChatRepositoryImpl(
         message: String,
     ): DataResult<String> =
         withContext(ioDispatcher) {
-            safeAiCall { dataSource.sendMessage(history, message) }.requireText()
+            safeAiCall { dataSource.sendMessage(history, message) }.requireReplyText()
         }
 
     override suspend fun identifyPoster(
@@ -40,24 +41,6 @@ class AiChatRepositoryImpl(
                 } catch (e: Throwable) {
                     return@withContext DataResult.Failure(AppError.Unknown(e))
                 }
-            safeAiCall { dataSource.identifyPoster(history, image) }.requireText()
-        }
-
-    /**
-     * A candidate with no text part is a success as far as the SDK is concerned, but
-     * there is nothing to render, so treat it as a failure rather than appending an
-     * empty bubble.
-     */
-    private fun DataResult<String?>.requireText(): DataResult<String> =
-        when (this) {
-            is DataResult.Failure -> this
-            is DataResult.Success -> {
-                val reply = data?.trim()
-                if (reply.isNullOrEmpty()) {
-                    DataResult.Failure(AppError.Unknown(IllegalStateException("The model returned no text")))
-                } else {
-                    DataResult.Success(reply)
-                }
-            }
+            safeAiCall { dataSource.identifyPoster(history, image) }.requireReplyText()
         }
 }
