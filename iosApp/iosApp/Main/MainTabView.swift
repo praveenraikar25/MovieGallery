@@ -52,7 +52,7 @@ struct MainTabView: View {
 }
 
 private extension View {
-    /// Registers every `Route` on the enclosing stack, so any tab can push either destination.
+    /// Registers every `Route` on the enclosing stack, so any tab can push any destination.
     func routeDestinations(graph: MovieGalleryGraph) -> some View {
         navigationDestination(for: Route.self) { route in
             switch route {
@@ -60,6 +60,8 @@ private extension View {
                 MovieDetailView(graph: graph, movieId: id)
             case .topTvShows:
                 TopTvShowsView(graph: graph)
+            case .chat:
+                AiChatView(graph: graph)
             }
         }
     }

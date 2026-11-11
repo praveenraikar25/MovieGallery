@@ -16,5 +16,10 @@ CURRENT_PROJECT_VERSION = 2
 // the app still builds and TMDB calls return 401, as on Android without the token.
 TMDB_READ_ACCESS_TOKEN =
 
+// The Firebase iOS app's reversed client ID (REVERSED_CLIENT_ID in GoogleService-Info.plist), registered
+// as the URL scheme Google Sign-In returns to. Empty by default: the app still builds, and "Continue with
+// Google" fails with the usual message instead of opening the chooser.
+GOOGLE_REVERSED_CLIENT_ID =
+
 // Per-developer values, git-ignored. Optional, so a fresh checkout still builds.
 #include? "Secrets.xcconfig"
