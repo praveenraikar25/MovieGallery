@@ -110,3 +110,11 @@ lint/reports/
 
 # Kotlin 2.x compiler/session caches (created by the KMP plugin)
 .kotlin/
+
+# iOS app (iosApp/): per-developer Firebase config and secrets, Xcode user state and build output
+iosApp/iosApp/GoogleService-Info.plist
+iosApp/Configuration/Secrets.xcconfig
+xcuserdata/
+*.xcuserstate
+iosApp/build/
+DerivedData/

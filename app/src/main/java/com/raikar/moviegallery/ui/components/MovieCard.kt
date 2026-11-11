@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.raikar.moviegallery.domain.model.Movie
+import com.raikar.moviegallery.ui.common.cardSubtitle
 import com.raikar.moviegallery.ui.theme.Sizes
 import com.raikar.moviegallery.ui.theme.movieColors
 
@@ -59,7 +60,7 @@ fun RailMovieCard(
                 )
                 Row(modifier = Modifier.padding(top = 3.dp)) {
                     Text(
-                        text = movie.subtitleWithRating,
+                        text = movie.cardSubtitle,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.movieColors.textMuted,
                         maxLines = 1,
@@ -70,15 +71,3 @@ fun RailMovieCard(
         }
     }
 }
-
-/**
- * Card subtitles, built by joining only the parts TMDB actually returned — an
- * unreleased film has no year and reports a 0.0 rating, and some titles carry no
- * genres at all.
- */
-private val Movie.subtitleWithRating: String
-    get() =
-        listOfNotNull(
-            "★ $ratingLabel".takeIf { hasRating },
-            genreLabel.takeIf { it.isNotBlank() },
-        ).joinToString(" · ").ifBlank { yearLabel }

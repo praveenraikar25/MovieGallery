@@ -19,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.raikar.moviegallery.domain.model.AppError
+import com.raikar.moviegallery.ui.common.errorDetail
+import com.raikar.moviegallery.ui.common.errorTitle
 import com.raikar.moviegallery.ui.theme.PillShape
 import com.raikar.moviegallery.ui.theme.Sizes
 import com.raikar.moviegallery.ui.theme.movieColors
@@ -56,13 +58,13 @@ fun ErrorState(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = error.title,
+            text = error.errorTitle,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
         )
         Text(
-            text = error.detail,
+            text = error.errorDetail,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.movieColors.textMuted,
             textAlign = TextAlign.Center,
@@ -81,30 +83,3 @@ fun ErrorState(
         )
     }
 }
-
-private val AppError.title: String
-    get() =
-        when (this) {
-            AppError.Network -> "No connection"
-            AppError.Unauthorized -> "TMDB rejected the request"
-            AppError.AuthRequired -> "Sign-in required"
-            AppError.NotFound -> "Not found"
-            AppError.Serialization -> "Unexpected response"
-            is AppError.Http -> "Something went wrong"
-            is AppError.Unknown -> "Something went wrong"
-        }
-
-private val AppError.detail: String
-    get() =
-        when (this) {
-            AppError.Network -> "Check your internet connection and try again."
-            // The overwhelmingly likely cause on a fresh checkout, so name it directly
-            // rather than making someone decode a 401.
-            AppError.Unauthorized ->
-                "Your TMDB token is missing or invalid — check tmdb.readAccessToken in local.properties."
-            AppError.AuthRequired -> "Your session couldn't be verified. Sign out and sign back in, then try again."
-            AppError.NotFound -> "TMDB doesn't have a record for this title."
-            AppError.Serialization -> "TMDB returned data this app couldn't read."
-            is AppError.Http -> "TMDB responded with an error (HTTP $code)."
-            is AppError.Unknown -> "An unexpected error occurred."
-        }
