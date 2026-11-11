@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-10
+goal: "Phase 5b of the KMP migration: the iOS app shell, with Login then Home working end to end on the simulator"
+skip_specs: true
