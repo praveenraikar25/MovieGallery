@@ -1,8 +1,9 @@
 import Shared
 import SwiftUI
 
-/// Email and password sign-in and account creation, on the shared `LoginViewModel`. Validation and
-/// every message come from the ViewModel; the copy here matches Android's `LoginScreen`.
+/// Email and password sign-in, account creation and "Continue with Google", on the shared
+/// `LoginViewModel`. Validation and every message come from the ViewModel; the copy here matches
+/// Android's `LoginScreen`.
 struct LoginView: View {
     let graph: MovieGalleryGraph
     let onSignedIn: () -> Void
@@ -25,9 +26,13 @@ private struct LoginContent: View {
     // re-reads the stale value in between. The ViewModel only echoes these values, never rewrites them.
     @State private var email = ""
     @State private var password = ""
+    /// `isLoading` only flips once a token comes back, so the chooser being open needs its own flag
+    /// to stop a second tap from starting another sign-in, as on Android.
+    @State private var isGoogleChooserOpen = false
 
     private var state: LoginUiState { model.state }
     private var isCreatingAccount: Bool { state.mode == LoginMode.createaccount }
+    private var isBusy: Bool { state.isLoading || isGoogleChooserOpen }
 
     var body: some View {
         VStack(spacing: 16) {
@@ -70,17 +75,49 @@ private struct LoginContent: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
-            .disabled(state.isLoading)
+            .disabled(isBusy)
 
             Button(isCreatingAccount ? "Already have an account? Log in" : "Don't have an account? Create account") {
                 model.viewModel.onToggleMode()
             }
-            .disabled(state.isLoading)
+            .disabled(isBusy)
+
+            HStack(spacing: 12) {
+                VStack { Divider() }
+                Text("OR").font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                VStack { Divider() }
+            }
+            .padding(.vertical, 4)
+
+            Button(action: continueWithGoogle) {
+                Label {
+                    Text("Continue with Google")
+                } icon: {
+                    Image("GoogleG").resizable().frame(width: 18, height: 18)
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+            .disabled(isBusy)
             Spacer()
         }
         .padding(24)
         .onChange(of: state.isAuthenticated, initial: true) { _, isAuthenticated in
             if isAuthenticated { onSignedIn() }
+        }
+    }
+
+    private func continueWithGoogle() {
+        guard !isBusy else { return }
+        isGoogleChooserOpen = true
+        Task {
+            switch await GoogleSignInFlow.signIn() {
+            case let .token(idToken): model.viewModel.onGoogleToken(idToken: idToken)
+            case .cancelled: model.viewModel.onGoogleCancelled()
+            case .failed: model.viewModel.onGoogleFailed()
+            }
+            isGoogleChooserOpen = false
         }
     }
 }

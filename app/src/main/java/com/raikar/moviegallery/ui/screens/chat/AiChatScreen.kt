@@ -67,7 +67,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import com.raikar.moviegallery.domain.model.AppError
+import com.raikar.moviegallery.ui.common.NO_CAMERA_APP_MESSAGE
+import com.raikar.moviegallery.ui.common.NO_PICKER_APP_MESSAGE
+import com.raikar.moviegallery.ui.common.chatErrorMessage
+import com.raikar.moviegallery.ui.common.chatTypingLabel
 import com.raikar.moviegallery.ui.components.AppIcons
 import com.raikar.moviegallery.ui.theme.movieColors
 import kotlinx.coroutines.Dispatchers
@@ -159,13 +162,13 @@ fun AiChatScreen(
             }
             if (uiState.isSending) {
                 item(key = TYPING_INDICATOR_KEY) {
-                    TypingBubble(label = if (uiState.isIdentifyingPoster) "Identifying poster…" else null)
+                    TypingBubble(label = chatTypingLabel(uiState.isIdentifyingPoster))
                 }
             }
         }
 
         // A capture failure takes precedence: it is the thing the user just triggered.
-        val errorMessage = captureError ?: uiState.error?.chatMessage
+        val errorMessage = captureError ?: uiState.error?.chatErrorMessage
         errorMessage?.let { message ->
             ChatErrorRow(
                 message = message,
@@ -214,7 +217,7 @@ fun AiChatScreen(
                     // and still have nothing willing to serve ACTION_IMAGE_CAPTURE — a
                     // managed profile, for one — so hasCamera above cannot pre-empt it.
                     pendingCaptureUri = null
-                    captureError = "No app on this device can take a photo."
+                    captureError = NO_CAMERA_APP_MESSAGE
                 }
             },
             onChooseFromGallery = {
@@ -228,7 +231,7 @@ fun AiChatScreen(
                     // startActivityForResult, so nothing to handle the intent is a crash.
                     // minSdk 29 means every install takes PickVisualMedia's ACTION_OPEN_DOCUMENT
                     // fallback rather than the system photo picker, and that can be absent.
-                    captureError = "No app on this device can pick an image."
+                    captureError = NO_PICKER_APP_MESSAGE
                 }
             },
         )
@@ -632,22 +635,6 @@ private fun ChatErrorRow(
         }
     }
 }
-
-private val AppError.chatMessage: String
-    get() =
-        when (this) {
-            AppError.Network -> "No connection — check your internet and try again."
-            // The likely causes are all setup rather than user error, so name them: an
-            // unregistered App Check debug token is the usual one on a fresh checkout.
-            AppError.Unauthorized ->
-                "Firebase rejected the request. Check that AI Logic is enabled and this device's " +
-                    "App Check debug token is registered."
-            AppError.AuthRequired -> "Sign in again to chat with the assistant."
-            AppError.Serialization -> "The assistant sent a reply this app couldn't read."
-            AppError.NotFound -> "The assistant is unavailable right now."
-            is AppError.Http -> "The assistant is unavailable right now (HTTP $code)."
-            is AppError.Unknown -> "Couldn't get a reply. Tap retry to try again."
-        }
 
 private const val TYPING_INDICATOR_KEY = "typing-indicator"
 

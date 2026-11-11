@@ -1,3 +1,4 @@
+import GoogleSignIn
 import Shared
 import SwiftUI
 
@@ -18,13 +19,17 @@ struct RootView: View {
     }
 
     var body: some View {
-        if signedIn {
-            MainTabView(graph: graph) {
-                session.signOut()
-                signedIn = false
+        Group {
+            if signedIn {
+                MainTabView(graph: graph) {
+                    session.signOut()
+                    signedIn = false
+                }
+            } else {
+                LoginView(graph: graph) { signedIn = true }
             }
-        } else {
-            LoginView(graph: graph) { signedIn = true }
         }
+        // Google Sign-In returns through the reversed-client-ID URL scheme.
+        .onOpenURL { GIDSignIn.sharedInstance.handle($0) }
     }
 }

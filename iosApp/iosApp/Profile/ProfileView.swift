@@ -1,8 +1,8 @@
 import Shared
 import SwiftUI
 
-/// The signed-in account and the hub for Top TV Shows, the settings rows and sign-out (profile).
-/// The "DISCOVER" entry for the AI chat arrives with the chat in phase 5c-2.
+/// The signed-in account and the hub for the AI chat, Top TV Shows, the settings rows and sign-out
+/// (profile; app-navigation "Secondary features are reached from Profile").
 struct ProfileView: View {
     let graph: MovieGalleryGraph
     let onSignOut: () -> Void
@@ -35,6 +35,24 @@ private struct ProfileContent: View {
             }
             .frame(maxWidth: .infinity)
             .listRowBackground(Color.clear)
+
+            Section {
+                NavigationLink(value: Route.chat) {
+                    Label {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Find Movies with AI")
+                            Text("Chat with an assistant for personalized picks")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: "sparkles")
+                    }
+                }
+            } header: {
+                // Spelled in capitals: iOS 26 no longer uppercases list headers, and Android shows "DISCOVER".
+                Text("DISCOVER")
+            }
 
             Section {
                 NavigationLink("Top TV Shows", value: Route.topTvShows)

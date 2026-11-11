@@ -10,6 +10,7 @@
 		39113EEB97F3D82C3346F2DF /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = 34F00EB4271D51900BEFC6B1 /* FirebaseAppCheck */; };
 		39950C9442BB1BA3881704B6 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 91CB5B172C7CAAE0BDEB7EFE /* FirebaseAuth */; };
 		5C1E411C4D772644AF5B0F61 /* FirebaseAILogic in Frameworks */ = {isa = PBXBuildFile; productRef = 0CB7B73CBC28C861D5C902E9 /* FirebaseAILogic */; };
+		A1B2C3D4E5F60718293A4B5C /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = B1C2D3E4F5061728394A5B6C /* GoogleSignIn */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -67,6 +68,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				39950C9442BB1BA3881704B6 /* FirebaseAuth in Frameworks */,
+				A1B2C3D4E5F60718293A4B5C /* GoogleSignIn in Frameworks */,
 				5C1E411C4D772644AF5B0F61 /* FirebaseAILogic in Frameworks */,
 				39113EEB97F3D82C3346F2DF /* FirebaseAppCheck in Frameworks */,
 			);
@@ -124,6 +126,7 @@
 			name = iosApp;
 			packageProductDependencies = (
 				91CB5B172C7CAAE0BDEB7EFE /* FirebaseAuth */,
+				B1C2D3E4F5061728394A5B6C /* GoogleSignIn */,
 				0CB7B73CBC28C861D5C902E9 /* FirebaseAILogic */,
 				34F00EB4271D51900BEFC6B1 /* FirebaseAppCheck */,
 			);
@@ -184,6 +187,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				39F9CF4736165E448D97A865 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				C1D2E3F405162738495A6B7C /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = F200AC82F31F95DB023AB0AA /* Products */;
@@ -268,6 +272,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = YES;
+				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.873635030999-v9806lps50fk0q24kdrprnpklljrh8n3";
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = MovieGallery;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -430,6 +435,14 @@
 				minimumVersion = 13.1.1;
 			};
 		};
+		C1D2E3F405162738495A6B7C /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 10.1.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -447,6 +460,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 39F9CF4736165E448D97A865 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAuth;
+		};
+		B1C2D3E4F5061728394A5B6C /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C1D2E3F405162738495A6B7C /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -39,6 +39,7 @@ final class AppEnvironment {
             AppCheck.setAppCheckProviderFactory(AppAttestProviderFactory())
         #endif
         FirebaseApp.configure()
+        GoogleSignInSetup.configure()
 
         // After configure(): AppSessionViewModel reads the auth bridge's currentUser() when it's created.
         let graph = IosKoinKt.startMovieGallery(

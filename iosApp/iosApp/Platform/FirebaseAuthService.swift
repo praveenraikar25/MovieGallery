@@ -1,5 +1,6 @@
 import FirebaseAuth
 import Foundation
+import GoogleSignIn
 import Shared
 
 /// Firebase Auth for the shared code: adopts `FirebaseAuthBridge` with the Firebase iOS SDK
@@ -29,14 +30,25 @@ final class FirebaseAuthService: NSObject, FirebaseAuthBridge {
         }
     }
 
-    /// Not available until Google Sign-In arrives in phase 5c; no 5b screen can call it. Kotlin maps
-    /// this to `AuthError.Unknown`.
+    /// Firebase on iOS needs the Google access token as well as the ID token Kotlin passes back. The
+    /// shared bridge carries only the ID token, as Android's flow does, so the access token comes from
+    /// the Google user `GoogleSignInFlow` has just signed in (add-ios-chat-and-google-signin design,
+    /// decision 7). With no such user the call fails, and Kotlin shows "Google sign-in failed".
     func signInWithGoogle(idToken: String, completion: @escaping (BridgedAuthError?) -> Void) {
-        completion(BridgedAuthError(domain: "MovieGallery", code: 0, message: "Google sign-in isn't available on iOS yet"))
+        guard let accessToken = GIDSignIn.sharedInstance.currentUser?.accessToken.tokenString else {
+            completion(BridgedAuthError(domain: "MovieGallery", code: 0, message: "No signed-in Google user"))
+            return
+        }
+        let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: accessToken)
+        Auth.auth().signIn(with: credential) { _, error in
+            completion(error.map(bridgedAuthError))
+        }
     }
 
     /// Firebase's `signOut()` throws, but signing out can't fail on Android, so the error is dropped.
+    /// The Google session ends too, so the next "Continue with Google" shows the account chooser.
     func signOut() {
+        GIDSignIn.sharedInstance.signOut()
         try? Auth.auth().signOut()
     }
 
