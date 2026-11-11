@@ -64,6 +64,9 @@ import coil3.compose.AsyncImage
 import com.raikar.moviegallery.domain.model.Movie
 import com.raikar.moviegallery.domain.model.MovieDetail
 import com.raikar.moviegallery.domain.model.ProductionCountry
+import com.raikar.moviegallery.ui.common.collapseFraction
+import com.raikar.moviegallery.ui.common.extraBottomPaddingPx
+import com.raikar.moviegallery.ui.common.synopsisText
 import com.raikar.moviegallery.ui.components.AppButton
 import com.raikar.moviegallery.ui.components.AppIcons
 import com.raikar.moviegallery.ui.components.ButtonVariant
@@ -263,7 +266,7 @@ private fun MovieDetailContent(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = movie.synopsis.ifBlank { "No synopsis available." },
+                        text = movie.synopsisText,
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.movieColors.textMuted,
                     )

@@ -25,13 +25,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.raikar.moviegallery.domain.model.CountryDetails
+import com.raikar.moviegallery.ui.common.countryDetailRows
 import com.raikar.moviegallery.ui.components.AppButton
 import com.raikar.moviegallery.ui.components.ButtonVariant
 import com.raikar.moviegallery.ui.components.FilmReelSpinner
 import com.raikar.moviegallery.ui.theme.PillShape
 import com.raikar.moviegallery.ui.theme.movieColors
-
-private const val MISSING_VALUE = "—"
 
 /** Details for one production country, from the Countries GraphQL API. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -160,12 +159,3 @@ private fun MutedText(text: String) {
         color = MaterialTheme.movieColors.textMuted,
     )
 }
-
-/** The sheet's label/value rows, with "—" for anything the source left out. */
-internal fun countryDetailRows(details: CountryDetails): List<Pair<String, String>> =
-    listOf(
-        "Capital" to (details.capital ?: MISSING_VALUE),
-        "Continent" to (details.continent ?: MISSING_VALUE),
-        "Languages" to details.languages.joinToString(", ").ifEmpty { MISSING_VALUE },
-        "Currency" to details.currencies.joinToString(", ").ifEmpty { MISSING_VALUE },
-    )

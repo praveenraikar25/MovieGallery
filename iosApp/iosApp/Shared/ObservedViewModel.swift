@@ -36,6 +36,29 @@ final class ObservedViewModel<VM: Lifecycle_viewmodelViewModel, State: AnyObject
     }
 }
 
+/// A second `StateFlow` of a ViewModel that an `ObservedViewModel` already owns, such as Home's
+/// `avatarInitial` (add-ios-browse-screens design, decision 3). It only watches: the ViewModel's
+/// lifetime stays with its `ObservedViewModel`. `deinit` stops the watch.
+@Observable
+@MainActor
+final class ObservedFlow<Value: AnyObject> {
+    private(set) var value: Value
+
+    @ObservationIgnored private var handle: WatchHandle?
+
+    init(_ flow: any Kotlinx_coroutines_coreStateFlow) {
+        let watcher = StateFlowWatcher<Value>(flow: flow)
+        value = watcher.value
+        handle = watcher.watch { [weak self] value in
+            MainActor.assumeIsolated { self?.value = value }
+        }
+    }
+
+    deinit {
+        handle?.cancel()
+    }
+}
+
 /// Creates a screen's `ObservedViewModel` once, when the view first appears, and keeps it for the
 /// view's lifetime. Creating it in a view's initializer instead would build (and start loading)
 /// a throwaway ViewModel every time SwiftUI re-creates the view struct.

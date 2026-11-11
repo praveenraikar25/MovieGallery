@@ -12,7 +12,7 @@ struct MovieGalleryApp: App {
             if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
                 Color.clear
             } else {
-                RootView(graph: AppEnvironment.shared.graph, isSignedIn: AppEnvironment.shared.session.viewModel.isSignedIn)
+                RootView(graph: AppEnvironment.shared.graph, session: AppEnvironment.shared.session.viewModel)
             }
         }
     }

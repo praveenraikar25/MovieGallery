@@ -13,3 +13,7 @@ val Movie.cardSubtitle: String
             "★ $ratingLabel".takeIf { hasRating },
             genreLabel.takeIf { it.isNotBlank() },
         ).joinToString(" · ").ifBlank { yearLabel }
+
+/** The synopsis Movie Detail shows, with a fallback for titles TMDB has none for. */
+val Movie.synopsisText: String
+    get() = synopsis.ifBlank { "No synopsis available." }

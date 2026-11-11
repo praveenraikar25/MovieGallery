@@ -1,8 +1,8 @@
-package com.raikar.moviegallery.ui.components
+package com.raikar.moviegallery.ui.common
 
 import com.raikar.moviegallery.domain.model.ProductionCountry
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class CountryChipLabelTest {
     @Test

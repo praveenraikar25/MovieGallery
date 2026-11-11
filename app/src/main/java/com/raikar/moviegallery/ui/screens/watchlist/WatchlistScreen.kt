@@ -23,10 +23,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.raikar.moviegallery.ui.common.toPosterGridItem
 import com.raikar.moviegallery.ui.components.AppIcons
 import com.raikar.moviegallery.ui.components.PosterGridCard
 import com.raikar.moviegallery.ui.components.WatchlistBookmarkBadge
-import com.raikar.moviegallery.ui.components.toPosterGridItem
 import com.raikar.moviegallery.ui.theme.Sizes
 import com.raikar.moviegallery.ui.theme.movieColors
 import org.koin.compose.viewmodel.koinViewModel
