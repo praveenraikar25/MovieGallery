@@ -1,8 +1,8 @@
-package com.raikar.moviegallery.ui.screens.detail
+package com.raikar.moviegallery.ui.common
 
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class HeaderCollapseTest {
     private val expanded = 1000f

@@ -1,8 +1,8 @@
-package com.raikar.moviegallery.ui.screens.detail
+package com.raikar.moviegallery.ui.common
 
 import com.raikar.moviegallery.domain.model.CountryDetails
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class CountryDetailRowsTest {
     private val japan =
@@ -18,7 +18,7 @@ class CountryDetailRowsTest {
         )
 
     @Test
-    fun `rows are capital, continent, languages and currency in that order`() {
+    fun `rows are capital then continent then languages then currency`() {
         assertEquals(
             listOf(
                 "Capital" to "Tokyo",

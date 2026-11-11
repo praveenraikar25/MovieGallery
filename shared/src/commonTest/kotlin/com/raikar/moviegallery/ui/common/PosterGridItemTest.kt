@@ -1,11 +1,15 @@
-package com.raikar.moviegallery.ui.components
+package com.raikar.moviegallery.ui.common
 
 import com.raikar.moviegallery.domain.model.Movie
 import com.raikar.moviegallery.domain.model.TvShow
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
+/**
+ * Pins the poster grid tile's text, moved here from `:app` with `PosterGridCard`'s labels
+ * (add-ios-browse-screens design, decision 4).
+ */
 class PosterGridItemTest {
     private fun movie(
         year: Int? = 2026,

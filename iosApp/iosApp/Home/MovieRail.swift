@@ -4,6 +4,7 @@ import SwiftUI
 /// One titled, horizontally scrolling rail of movie cards.
 struct MovieRail: View {
     let section: MovieSection
+    let onMovieClick: (Int32) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -13,7 +14,9 @@ struct MovieRail: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(alignment: .top, spacing: 12) {
                     ForEach(section.movies, id: \.id) { movie in
-                        MovieCard(movie: movie)
+                        // movie-browse "Tapping a card opens its details".
+                        Button { onMovieClick(movie.id) } label: { MovieCard(movie: movie) }
+                            .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal)
@@ -33,9 +36,7 @@ private struct MovieCard: View {
                 if let image = phase.image {
                     image.resizable().scaledToFill()
                 } else {
-                    Rectangle()
-                        .fill(.quaternary)
-                        .overlay(Image(systemName: "film").foregroundStyle(.secondary))
+                    MovieGradient.gradient(for: movie.id)
                 }
             }
             .frame(width: 120, height: 180)

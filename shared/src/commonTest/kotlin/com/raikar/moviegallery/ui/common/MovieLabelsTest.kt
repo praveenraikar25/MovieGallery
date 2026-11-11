@@ -4,7 +4,10 @@ import com.raikar.moviegallery.domain.model.Movie
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** Pins the card subtitle, moved here from `:app`'s `MovieCard` (add-ios-app-shell design, decision 8). */
+/**
+ * Pins the card subtitle, moved here from `:app`'s `MovieCard` (add-ios-app-shell design, decision 8), and the
+ * synopsis fallback, moved from `MovieDetailScreen` (add-ios-browse-screens design, decision 4).
+ */
 class MovieLabelsTest {
     @Test
     fun `a rated film with genres shows the rating then two genres`() {
@@ -34,17 +37,29 @@ class MovieLabelsTest {
         assertEquals("TBA", movie(rating = 0.0, genres = emptyList(), year = null).cardSubtitle)
     }
 
+    @Test
+    fun `a present synopsis is shown as is`() {
+        assertEquals("A heist.", movie(synopsis = "A heist.").synopsisText)
+    }
+
+    @Test
+    fun `a blank synopsis falls back`() {
+        assertEquals("No synopsis available.", movie(synopsis = "").synopsisText)
+        assertEquals("No synopsis available.", movie(synopsis = "   ").synopsisText)
+    }
+
     private fun movie(
-        rating: Double,
-        genres: List<String>,
+        rating: Double = 7.0,
+        genres: List<String> = emptyList(),
         year: Int? = 2024,
+        synopsis: String = "",
     ) = Movie(
         id = 1,
         title = "A film",
         year = year,
         rating = rating,
         genres = genres,
-        synopsis = "",
+        synopsis = synopsis,
         posterUrl = null,
         backdropUrl = null,
     )

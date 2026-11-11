@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-11
+goal: "Phase 5c-1 of the KMP migration: the iOS tab bar plus Search, Movie Detail, Watchlist, Profile with sign-out, and Top TV Shows on the shared ViewModels"
+skip_specs: true

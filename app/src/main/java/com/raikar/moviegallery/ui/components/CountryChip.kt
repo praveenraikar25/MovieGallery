@@ -21,6 +21,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import com.raikar.moviegallery.domain.model.ProductionCountry
+import com.raikar.moviegallery.ui.common.countryChipLabel
 import com.raikar.moviegallery.ui.theme.PillShape
 import com.raikar.moviegallery.ui.theme.movieColors
 
@@ -63,7 +64,3 @@ fun CountryChip(
         )
     }
 }
-
-/** "🇰🇷 South Korea", or just the name when the code yields no flag. */
-internal fun countryChipLabel(country: ProductionCountry): String =
-    country.flag?.let { "$it ${country.name}" } ?: country.name

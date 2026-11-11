@@ -1,13 +1,14 @@
-package com.raikar.moviegallery.ui.screens.detail
+package com.raikar.moviegallery.ui.common
 
 /**
  * How far the detail header has collapsed, from 0 (fully expanded) to 1 (a pinned strip).
  *
  * The list's first item is a spacer as tall as the expanded header, so while that item is
  * still on screen its scroll offset *is* how far the header has shrunk. Once it has scrolled
- * out of view the header has been collapsed for a while.
+ * out of view the header has been collapsed for a while. Shared so both apps' detail headers
+ * collapse alike; iOS, which has no list items, passes index 0 and its scroll offset in points.
  */
-internal fun collapseFraction(
+fun collapseFraction(
     firstVisibleItemIndex: Int,
     firstVisibleItemScrollOffset: Int,
     expandedHeightPx: Float,
@@ -26,7 +27,7 @@ internal fun collapseFraction(
  * [collapseDistancePx]. Without it, a short page can't scroll far enough to finish
  * collapsing and the header would sit half-way with nothing left to scroll.
  */
-internal fun extraBottomPaddingPx(
+fun extraBottomPaddingPx(
     viewportHeightPx: Int,
     contentHeightPx: Int,
     collapseDistancePx: Int,
