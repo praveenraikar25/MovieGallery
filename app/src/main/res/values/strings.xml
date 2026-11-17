@@ -1,5 +1,3 @@
 <resources>
     <string name="app_name">MovieGallery</string>
-    <!-- Shown to the user where Android lists what agents can do in this app. -->
-    <string name="app_functions_display_description">Search movies, see and add to your watchlist, and open a movie\'s details.</string>
 </resources>
