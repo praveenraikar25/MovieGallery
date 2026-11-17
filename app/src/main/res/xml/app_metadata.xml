@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app description on-device agents read for this app's AppFunctions. -->
+<AppFunctionAppMetadata xmlns:appfn="http://schemas.android.com/apk/androidx.appfunctions"
+    appfn:instructions="MovieGallery is a movie discovery app backed by The Movie Database (TMDB). Its functions search movies, list and add to the user's watchlist, and open a movie's details screen.
+
+Operational patterns:
+- Movies are identified by their TMDB movie ID. 'searchMovies' returns it as 'movieId', which 'addToWatchlist' and 'openMovieDetails' take.
+- 'searchMovies' already returns each movie's year, rating, genres and synopsis, so a search answers most questions about a movie without opening it.
+- 'addToWatchlist' is idempotent: calling it for a movie already on the watchlist changes nothing.
+
+Constraints:
+- The watchlist belongs to the account signed in to MovieGallery. 'getWatchlist' and 'addToWatchlist' fail when no one is signed in; signing in is only possible in the app.
+- Every function except 'getWatchlist' needs a network connection to TMDB."
+    appfn:displayDescription="@string/app_functions_display_description" />
