@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.google.services)
 }
@@ -131,6 +132,10 @@ dependencies {
     implementation(libs.okhttp.logging.interceptor)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.apollo.runtime)
+
+    // AppFunctions: on-device agents search movies and manage the watchlist without opening the UI.
+    implementation(libs.androidx.appfunctions)
+    ksp(libs.androidx.appfunctions.compiler)
 
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)

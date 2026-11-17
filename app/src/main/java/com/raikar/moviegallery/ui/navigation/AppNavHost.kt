@@ -1,6 +1,7 @@
 package com.raikar.moviegallery.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -13,12 +14,26 @@ import com.raikar.moviegallery.ui.screens.tvshows.TopTvShowsScreen
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
+/**
+ * @param requestedMovieId a movie to open on Movie Detail, pushed over whatever is showing (an
+ * AppFunction's `openMovieDetails` intent); [onMovieRequestHandled] runs once it has been.
+ */
 @Composable
-fun AppNavHost(sessionViewModel: AppSessionViewModel = koinViewModel()) {
+fun AppNavHost(
+    requestedMovieId: Int? = null,
+    onMovieRequestHandled: () -> Unit = {},
+    sessionViewModel: AppSessionViewModel = koinViewModel(),
+) {
     val navController = rememberNavController()
 
     // Read once at creation, so the start destination never changes under the NavHost.
     val startRoute = if (sessionViewModel.isSignedIn) Routes.MAIN else Routes.LOGIN
+
+    LaunchedEffect(requestedMovieId) {
+        requestedMovieId ?: return@LaunchedEffect
+        navController.navigate(Routes.detail(requestedMovieId))
+        onMovieRequestHandled()
+    }
 
     NavHost(navController = navController, startDestination = startRoute) {
         composable(Routes.LOGIN) {
